@@ -812,36 +812,47 @@
                 const toCardRect = toCard.getBoundingClientRect();
                 const canvasRect = canvasLayer.getBoundingClientRect();
 
-                const dx = (toCardRect.left + toCardRect.width / 2) - (fromCardRect.left + fromCardRect.width / 2);
-                const dy = (toCardRect.top + toCardRect.height / 2) - (fromCardRect.top + fromCardRect.height / 2);
-                const offset = 8;
+                const cardDx = (toCardRect.left + toCardRect.width / 2) - (fromCardRect.left + fromCardRect.width / 2);
+                const cardDy = (toCardRect.top + toCardRect.height / 2) - (fromCardRect.top + fromCardRect.height / 2);
+                const offset = 8 / scale;  // FIX: scale-aware offset
 
                 let x1, y1, x2, y2, pathData, mx, my;
 
-                if (Math.abs(dy) > Math.abs(dx) * 1.2) {
+                // Determine if connection is primarily vertical or horizontal
+                if (Math.abs(cardDy) > Math.abs(cardDx) * 1.2) {
+                    // ===== VERTICAL CONNECTION =====
                     x1 = (fromRect.left + fromRect.width / 2 - canvasRect.left) / scale;
                     x2 = (toRect.left + toRect.width / 2 - canvasRect.left) / scale;
 
-                    if (dy > 0) {
-                        y1 = (fromCardRect.bottom - canvasRect.top) / scale + offset;
-                        y2 = (toCardRect.top - canvasRect.top) / scale - offset;
+                    if (cardDy > 0) {
+                        // from is above to
+                        y1 = (fromRect.bottom - canvasRect.top) / scale + offset;  // FIX: column bottom
+                        y2 = (toRect.top - canvasRect.top) / scale - offset;         // FIX: column top
                     } else {
-                        y1 = (fromCardRect.top - canvasRect.top) / scale - offset;
-                        y2 = (toCardRect.bottom - canvasRect.top) / scale + offset;
+                        // from is below to
+                        y1 = (fromRect.top - canvasRect.top) / scale - offset;       // FIX: column top
+                        y2 = (toRect.bottom - canvasRect.top) / scale + offset;      // FIX: column bottom
                     }
 
-                    const cdy = Math.abs(y2 - y1) * 0.5;
-                    const cy1 = y1 + (dy > 0 ? cdy : -cdy);
-                    const cy2 = y2 + (dy > 0 ? -cdy : cdy);
-                    pathData = `M ${x1} ${y1} C ${x1} ${cy1}, ${x2} ${cy2}, ${x2} ${y2}`;
+                    const distY = Math.abs(y2 - y1);
+                    const cdy = distY * 0.5;
 
-                    mx = 0.125 * x1 + 0.375 * x1 + 0.375 * x2 + 0.125 * x2;
+                    // FIX: smoother curve via midX control points
+                    const midX = (x1 + x2) / 2;
+                    const cy1 = y1 + (cardDy > 0 ? cdy : -cdy);
+                    const cy2 = y2 + (cardDy > 0 ? -cdy : cdy);
+
+                    pathData = `M ${x1} ${y1} C ${midX} ${cy1}, ${midX} ${cy2}, ${x2} ${y2}`;
+
+                    mx = 0.125 * x1 + 0.375 * midX + 0.375 * midX + 0.125 * x2;
                     my = 0.125 * y1 + 0.375 * cy1 + 0.375 * cy2 + 0.125 * y2;
                 } else {
-                    let rawX1 = (fromRect.right - canvasRect.left) / scale;
+                    // ===== HORIZONTAL CONNECTION =====
                     y1 = (fromRect.top + fromRect.height / 2 - canvasRect.top) / scale;
-                    let rawX2 = (toRect.left - canvasRect.left) / scale;
                     y2 = (toRect.top + toRect.height / 2 - canvasRect.top) / scale;
+
+                    let rawX1 = (fromRect.right - canvasRect.left) / scale;
+                    let rawX2 = (toRect.left - canvasRect.left) / scale;
 
                     if (rawX1 < rawX2) {
                         x1 = rawX1 + offset;
@@ -851,13 +862,19 @@
                         x2 = (toRect.right - canvasRect.left) / scale + offset;
                     }
 
-                    const cdx = Math.abs(x2 - x1) * 0.5;
+                    const distX = Math.abs(x2 - x1);
+                    // FIX: longer control arms for smoother S-curve
+                    const cdx = Math.max(distX * 0.6, 40 / scale);
+                    const midY = (y1 + y2) / 2;
+
                     const cx1 = x1 + (rawX1 < rawX2 ? cdx : -cdx);
                     const cx2 = x2 + (rawX1 < rawX2 ? -cdx : cdx);
-                    pathData = `M ${x1} ${y1} C ${cx1} ${y1}, ${cx2} ${y2}, ${x2} ${y2}`;
+
+                    // FIX: use midY for elegant S-curve
+                    pathData = `M ${x1} ${y1} C ${cx1} ${midY}, ${cx2} ${midY}, ${x2} ${y2}`;
 
                     mx = 0.125 * x1 + 0.375 * cx1 + 0.375 * cx2 + 0.125 * x2;
-                    my = 0.125 * y1 + 0.375 * y1 + 0.375 * y2 + 0.125 * y2;
+                    my = 0.125 * y1 + 0.375 * midY + 0.375 * midY + 0.125 * y2;
                 }
 
                 const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -874,7 +891,7 @@
                 path.id = `line-${rel.from}-${rel.to}`;
                 svgOverlay.appendChild(path);
 
-                // Render Floating Cardinality & Composite Key Badge (Fallback cardinality: "1 : N")
+                // Render Floating Cardinality & Composite Key Badge
                 const cardBase = rel.cardinality || "1 : N";
                 const isComposite = Array.isArray(rel.fromCol);
                 const badgeLabel = isComposite ? `${rel.fromCol.join(', ')} (${cardBase})` : cardBase;
@@ -908,6 +925,131 @@
                 svgOverlay.appendChild(badgeG);
             });
         }
+        //
+        // // Smart Connection Line Routing (With Composite Key & Optional Cardinality Fallback)
+        // function updateConnections() {
+        //     const defs = svgOverlay.querySelector('defs').outerHTML;
+        //     svgOverlay.innerHTML = defs;
+        //
+        //     const view = schemaData[currentView];
+        //     if (!view || !view.relations) return;
+        //
+        //     const accentColor = getComputedStyle(document.body).getPropertyValue('--accent-blue').trim();
+        //
+        //     view.relations.forEach(rel => {
+        //         // Support Composite Keys (Array or String)
+        //         const firstFromCol = Array.isArray(rel.fromCol) ? rel.fromCol[0] : rel.fromCol;
+        //         const firstToCol = Array.isArray(rel.toCol) ? rel.toCol[0] : rel.toCol;
+        //
+        //         const fromColElem = document.getElementById(`col-${rel.from}-${firstFromCol}`);
+        //         const toColElem = document.getElementById(`col-${rel.to}-${firstToCol}`);
+        //         const fromCard = document.getElementById(`card-${rel.from}`);
+        //         const toCard = document.getElementById(`card-${rel.to}`);
+        //
+        //         if (!fromColElem || !toColElem || !fromCard || !toCard) return;
+        //
+        //         const fromRect = fromColElem.getBoundingClientRect();
+        //         const toRect = toColElem.getBoundingClientRect();
+        //         const fromCardRect = fromCard.getBoundingClientRect();
+        //         const toCardRect = toCard.getBoundingClientRect();
+        //         const canvasRect = canvasLayer.getBoundingClientRect();
+        //
+        //         const dx = (toCardRect.left + toCardRect.width / 2) - (fromCardRect.left + fromCardRect.width / 2);
+        //         const dy = (toCardRect.top + toCardRect.height / 2) - (fromCardRect.top + fromCardRect.height / 2);
+        //         const offset = 8;
+        //
+        //         let x1, y1, x2, y2, pathData, mx, my;
+        //
+        //         if (Math.abs(dy) > Math.abs(dx) * 1.2) {
+        //             x1 = (fromRect.left + fromRect.width / 2 - canvasRect.left) / scale;
+        //             x2 = (toRect.left + toRect.width / 2 - canvasRect.left) / scale;
+        //
+        //             if (dy > 0) {
+        //                 y1 = (fromCardRect.bottom - canvasRect.top) / scale + offset;
+        //                 y2 = (toCardRect.top - canvasRect.top) / scale - offset;
+        //             } else {
+        //                 y1 = (fromCardRect.top - canvasRect.top) / scale - offset;
+        //                 y2 = (toCardRect.bottom - canvasRect.top) / scale + offset;
+        //             }
+        //
+        //             const cdy = Math.abs(y2 - y1) * 0.5;
+        //             const cy1 = y1 + (dy > 0 ? cdy : -cdy);
+        //             const cy2 = y2 + (dy > 0 ? -cdy : cdy);
+        //             pathData = `M ${x1} ${y1} C ${x1} ${cy1}, ${x2} ${cy2}, ${x2} ${y2}`;
+        //
+        //             mx = 0.125 * x1 + 0.375 * x1 + 0.375 * x2 + 0.125 * x2;
+        //             my = 0.125 * y1 + 0.375 * cy1 + 0.375 * cy2 + 0.125 * y2;
+        //         } else {
+        //             let rawX1 = (fromRect.right - canvasRect.left) / scale;
+        //             y1 = (fromRect.top + fromRect.height / 2 - canvasRect.top) / scale;
+        //             let rawX2 = (toRect.left - canvasRect.left) / scale;
+        //             y2 = (toRect.top + toRect.height / 2 - canvasRect.top) / scale;
+        //
+        //             if (rawX1 < rawX2) {
+        //                 x1 = rawX1 + offset;
+        //                 x2 = rawX2 - offset;
+        //             } else {
+        //                 x1 = (fromRect.left - canvasRect.left) / scale - offset;
+        //                 x2 = (toRect.right - canvasRect.left) / scale + offset;
+        //             }
+        //
+        //             const cdx = Math.abs(x2 - x1) * 0.5;
+        //             const cx1 = x1 + (rawX1 < rawX2 ? cdx : -cdx);
+        //             const cx2 = x2 + (rawX1 < rawX2 ? -cdx : cdx);
+        //             pathData = `M ${x1} ${y1} C ${cx1} ${y1}, ${cx2} ${y2}, ${x2} ${y2}`;
+        //
+        //             mx = 0.125 * x1 + 0.375 * cx1 + 0.375 * cx2 + 0.125 * x2;
+        //             my = 0.125 * y1 + 0.375 * y1 + 0.375 * y2 + 0.125 * y2;
+        //         }
+        //
+        //         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        //         path.setAttribute('d', pathData);
+        //         path.setAttribute('class', 'connection-line');
+        //         path.setAttribute('marker-end', 'url(#marker-arrow)');
+        //
+        //         if (rel.identifying) {
+        //             path.style.strokeDasharray = 'none';
+        //         } else {
+        //             path.style.strokeDasharray = '8, 5';
+        //         }
+        //
+        //         path.id = `line-${rel.from}-${rel.to}`;
+        //         svgOverlay.appendChild(path);
+        //
+        //         // Render Floating Cardinality & Composite Key Badge (Fallback cardinality: "1 : N")
+        //         const cardBase = rel.cardinality || "1 : N";
+        //         const isComposite = Array.isArray(rel.fromCol);
+        //         const badgeLabel = isComposite ? `${rel.fromCol.join(', ')} (${cardBase})` : cardBase;
+        //
+        //         const badgeG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        //         const badgeWidth = badgeLabel.length * 8.5 + 16;
+        //         const badgeHeight = 18;
+        //
+        //         const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        //         bgRect.setAttribute('x', mx - badgeWidth / 2);
+        //         bgRect.setAttribute('y', my - badgeHeight / 2);
+        //         bgRect.setAttribute('width', badgeWidth);
+        //         bgRect.setAttribute('height', badgeHeight);
+        //         bgRect.setAttribute('rx', 4);
+        //         bgRect.setAttribute('fill', '#090d16');
+        //         bgRect.setAttribute('stroke', accentColor);
+        //         bgRect.setAttribute('stroke-width', '1.2');
+        //
+        //         const badgeText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        //         badgeText.setAttribute('x', mx);
+        //         badgeText.setAttribute('y', my + 3.5);
+        //         badgeText.setAttribute('fill', accentColor);
+        //         badgeText.setAttribute('font-size', '9.5px');
+        //         badgeText.setAttribute('font-family', "'Fira Code', 'Courier New', monospace");
+        //         badgeText.setAttribute('font-weight', 'bold');
+        //         badgeText.setAttribute('text-anchor', 'middle');
+        //         badgeText.textContent = badgeLabel;
+        //
+        //         badgeG.appendChild(bgRect);
+        //         badgeG.appendChild(badgeText);
+        //         svgOverlay.appendChild(badgeG);
+        //     });
+        // }
 
         // Switch View Tabs with Active Highlight Toggle
         function switchView(viewKey, btnElement) {
