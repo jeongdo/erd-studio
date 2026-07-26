@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive ERD Studio</title>
+    <!-- Google Fonts & FontAwesome Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Multi-Theme CSS Palette Load -->
+    <link rel="stylesheet" href="theme.css">
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Top Navigation Header */
+        header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--text-main);
+        }
+
+        .brand-badge {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: #fff;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* View Mode Tabs (Dynamic Auto-Generated) */
+        .tabs-container {
+            display: flex;
+            gap: 6px;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid var(--panel-border);
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            background: var(--accent-blue);
+            color: #090d16;
+            font-weight: 600;
+            box-shadow: 0 0 12px var(--line-glow);
+        }
+
+        /* Controls Toolbar */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .theme-dropdown {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            color: var(--text-main);
+            padding: 7px 12px;
+            font-size: 0.82rem;
+            outline: none;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s ease;
+        }
+
+        .theme-dropdown:hover {
+            border-color: var(--accent-blue);
+        }
+
+        .theme-dropdown option {
+            background: #0f172a;
+            color: #f8fafc;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            color: var(--text-main);
+            padding: 8px 12px 8px 34px;
+            font-size: 0.85rem;
+            outline: none;
+            width: 180px;
+            transition: width 0.3s ease;
+        }
+
+        .search-box input:focus {
+            width: 240px;
+            border-color: var(--accent-blue);
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid var(--panel-border);
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-icon:hover {
+            background: rgba(56, 189, 248, 0.2);
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        /* Main Workspace Container */
+        .workspace {
+            position: absolute;
+            top: 60px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            background-color: var(--bg-canvas);
+            background-image: 
+                radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 0),
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 24px 24px, 120px 120px, 120px 120px;
+            cursor: grab;
+            transition: background-color 0.3s ease;
+        }
+
+        .workspace:active {
+            cursor: grabbing;
+        }
+
+        /* Canvas Transform Layer */
+        #canvas-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform-origin: 0 0;
+        }
+
+        /* SVG Connection Lines Overlay */
+        #connections-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5000px;
+            height: 5000px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        path.connection-line {
+            fill: none;
+            stroke: var(--line-color);
+            stroke-width: 2.5;
+            filter: drop-shadow(0 0 6px var(--line-glow));
+            transition: stroke 0.3s ease, stroke-width 0.3s ease;
+        }
+
+        path.connection-line.highlighted {
+            stroke: var(--accent-amber);
+            stroke-width: 3.5;
+            filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.9));
+        }
+
+        path.connection-line.dimmed {
+            opacity: 0.35;
+        }
+
+        /* Table Card Element */
+        .table-card {
+            position: absolute;
+            min-width: 360px;
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border-radius: 12px;
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+            z-index: 20;
+            transition: box-shadow 0.3s ease, border-color 0.3s ease, opacity 0.3s ease, background 0.3s ease;
+            cursor: default;
+        }
+
+        .table-card:hover {
+            border-color: var(--accent-blue);
+            box-shadow: 0 16px 40px var(--line-glow);
+        }
+
+        .table-card.selected {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 2px var(--accent-blue), 0 16px 40px var(--line-glow);
+        }
+
+        .table-card.dimmed {
+            opacity: 0.35;
+        }
+
+        /* Table Header */
+        .table-header {
+            background: var(--card-header);
+            padding: 12px 16px;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+            border-bottom: 1px solid var(--panel-border);
+            cursor: move;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .table-title {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .table-name {
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-weight: 600;
+            font-size: 0.92rem;
+            color: var(--accent-blue);
+        }
+
+        .table-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .table-badge {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--accent-blue);
+            font-size: 0.65rem;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            border: 1px solid var(--panel-border);
+        }
+
+        /* Columns List */
+        .column-list {
+            padding: 8px 0;
+        }
+
+        .column-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 7px 18px;
+            font-size: 0.82rem;
+            transition: background 0.2s ease;
+            position: relative;
+        }
+
+        .column-row:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .column-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .key-badge {
+            font-size: 0.65rem;
+            font-weight: 700;
+            width: 24px;
+            height: 16px;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .key-pk {
+            background: rgba(244, 63, 94, 0.2);
+            color: var(--accent-rose);
+            border: 1px solid rgba(244, 63, 94, 0.4);
+        }
+
+        .key-fk {
+            background: rgba(56, 189, 248, 0.2);
+            color: var(--accent-blue);
+            border: 1px solid var(--panel-border);
+        }
+
+        .key-none {
+            visibility: hidden;
+            width: 24px;
+        }
+
+        .col-name {
+            font-family: 'Fira Code', 'Courier New', monospace;
+            color: var(--text-main);
+        }
+
+        .col-type {
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 0.74rem;
+            color: var(--text-muted);
+            padding-left: 12px;
+        }
+
+        /* Floating Zoom Controls */
+        .zoom-controls {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            padding: 4px;
+            gap: 4px;
+            z-index: 80;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+
+        .zoom-percentage {
+            font-size: 0.8rem;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            padding: 0 8px;
+            color: var(--text-muted);
+            min-width: 48px;
+            text-align: center;
+        }
+
+        /* Legend Bar */
+        .legend-bar {
+            position: absolute;
+            bottom: 24px;
+            right: 24px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            padding: 8px 16px;
+            gap: 16px;
+            z-index: 80;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-line {
+            width: 24px;
+            height: 3px;
+            background: var(--accent-blue);
+        }
+
+        .legend-line.dashed {
+            background: repeating-linear-gradient(90deg, var(--accent-blue) 0 4px, transparent 4px 8px);
+        }
+
+        /* Slide-out Inspector Drawer */
+        .inspector-drawer {
+            position: absolute;
+            top: 60px;
+            right: -480px;
+            width: 460px;
+            bottom: 0;
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid var(--panel-border);
+            z-index: 90;
+            transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -12px 0 32px rgba(0,0,0,0.5);
+        }
+
+        .inspector-drawer.open {
+            right: 0;
+        }
+
+        .drawer-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .drawer-title {
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 1.1rem;
+            color: var(--accent-blue);
+        }
+
+        .drawer-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Pure Monospace SQL Code Box */
+        .sql-box-container {
+            position: relative;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 16px;
+            overflow-x: auto;
+        }
+
+        pre.sql-code-block {
+            font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace !important;
+            font-size: 0.78rem;
+            line-height: 1.55;
+            color: var(--accent-blue);
+            margin: 0;
+            white-space: pre !important;
+            word-break: normal;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-main);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+
+        .copy-btn:hover {
+            background: var(--accent-blue);
+            color: #090d16;
+        }
+    </style>
+</head>
+<body class="theme-cyber-navy">
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="brand">
+            <i class="fa-solid fa-diagram-project" style="color: var(--accent-blue);"></i>
+            <span>ERD Studio</span>
+            <span class="brand-badge">PRO v0.0.3</span>
+        </div>
+
+        <!-- Dynamic Auto-Generated Tabs Container -->
+        <div class="tabs-container" id="tabs-container"></div>
+
+        <div class="toolbar">
+            <!-- Multi-Theme Dropdown Selector -->
+            <select id="theme-select" class="theme-dropdown" onchange="changeTheme(this.value)">
+                <option value="theme-cyber-navy">🌐 사이버 네이비 (Cyber Navy)</option>
+                <option value="theme-industrial-slate">⚙️ 산업 슬레이트 (Industrial Slate)</option>
+                <option value="theme-charcoal-gray">🐘 차콜 그레이 (Charcoal Gray)</option>
+                <option value="theme-midnight-gold">👑 미드나잇 골드 (Midnight Gold)</option>
+            </select>
+
+            <div class="search-box">
+                <i class="fa-solid fa-search"></i>
+                <input type="text" id="search-input" placeholder="테이블/컬럼 실시간 검색..." onkeyup="handleSearch()">
+            </div>
+            <button class="btn-icon" onclick="resetZoom()" title="화면 맞춤"><i class="fa-solid fa-compress"></i></button>
+            <button class="btn-icon" onclick="toggleInspector()" title="인스펙터 열기/닫기"><i class="fa-solid fa-sidebar"></i></button>
+        </div>
+    </header>
+
+    <!-- Main Workspace Area -->
+    <div class="workspace" id="workspace">
+        <div id="canvas-layer">
+            <svg id="connections-svg">
+                <defs>
+                    <!-- Dynamic Theme Arrow Marker for Line Target -->
+                    <marker id="marker-arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="10" markerHeight="10" orient="auto-start-reverse">
+                        <path id="arrow-path" d="M 2,2 L 10,6 L 2,10 Z" fill="var(--accent-blue)" stroke="var(--accent-blue)" stroke-width="1.5" stroke-linejoin="round" />
+                    </marker>
+                </defs>
+            </svg>
+            <div id="cards-container"></div>
+        </div>
+
+        <!-- Zoom Floating Bar -->
+        <div class="zoom-controls">
+            <button class="btn-icon" onclick="zoomCanvas(0.9)"><i class="fa-solid fa-minus"></i></button>
+            <span class="zoom-percentage" id="zoom-text">100%</span>
+            <button class="btn-icon" onclick="zoomCanvas(1.1)"><i class="fa-solid fa-plus"></i></button>
+            <button class="btn-icon" onclick="resetZoom()"><i class="fa-solid fa-rotate-left"></i></button>
+        </div>
+
+        <!-- Legend Bar -->
+        <div class="legend-bar">
+            <div class="legend-item">
+                <div class="legend-line"></div>
+                <span>식별 관계 (Solid Line)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line dashed"></div>
+                <span>비식별 관계 (Dashed Line)</span>
+            </div>
+            <div class="legend-item">
+                <span style="color: var(--accent-blue); font-weight: 700;">1 : N</span>
+                <span>수량 수식 배지 (Cardinality)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inspector Drawer -->
+    <div class="inspector-drawer" id="inspector">
+        <div class="drawer-header">
+            <div>
+                <div class="drawer-title" id="drawer-table-name">EMPLOYEES</div>
+                <div class="table-desc" id="drawer-table-desc">사원 마스터 테이블</div>
+            </div>
+            <button class="btn-icon" onclick="toggleInspector()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="drawer-content">
+            <div>
+                <h4 style="font-size: 0.85rem; margin-bottom: 8px; color: var(--text-muted);">오라클 DDL 정의</h4>
+                <div class="sql-box-container">
+                    <button class="copy-btn" onclick="copyCode('ddl-text')"><i class="fa-regular fa-copy"></i> 복사</button>
+                    <pre class="sql-code-block" id="ddl-text"></pre>
+                </div>
+            </div>
+            <div>
+                <h4 style="font-size: 0.85rem; margin-bottom: 8px; color: var(--accent-amber);">테스트용 Mock INSERT 쿼리 (1초 실행)</h4>
+                <div class="sql-box-container">
+                    <button class="copy-btn" onclick="copyCode('mock-text')"><i class="fa-regular fa-copy"></i> 복사</button>
+                    <pre class="sql-code-block" id="mock-text"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Central Schema Data JS Load -->
+    <script src="schema_data.js"></script>
+
+    <script>
+        // State Variables
+        let currentView = '';
+        let scale = 1;
+        let panX = 0, panY = 0;
+        let isPanning = false;
+        let startX, startY;
+        let selectedTableId = null;
+
+        const workspace = document.getElementById('workspace');
+        const canvasLayer = document.getElementById('canvas-layer');
+        const cardsContainer = document.getElementById('cards-container');
+        const svgOverlay = document.getElementById('connections-svg');
+
+        // Render Dynamic Header Tabs with Optional Metadata (tabName, icon) Support
+        function renderTabs() {
+            const tabsContainer = document.getElementById('tabs-container');
+            if (!tabsContainer || typeof schemaData === 'undefined') return;
+
+            tabsContainer.innerHTML = '';
+            const schemaKeys = Object.keys(schemaData);
+            if (schemaKeys.length === 0) return;
+
+            schemaKeys.forEach((key, index) => {
+                const viewData = schemaData[key];
+                const btn = document.createElement('button');
+                btn.className = `tab-btn ${index === 0 ? 'active' : ''}`;
+                btn.id = `tab-btn-${key}`;
+                
+                // Select Icon: Optional metadata icon || Smart Key Auto Detection
+                let iconClass = viewData.icon;
+                if (!iconClass) {
+                    if (key.includes('hr') || key.includes('user') || key.includes('emp')) {
+                        iconClass = 'fa-solid fa-users';
+                    } else if (key.includes('pipe') || key.includes('spool')) {
+                        iconClass = 'fa-solid fa-diagram-next';
+                    } else if (key.includes('support') || key.includes('system')) {
+                        iconClass = 'fa-solid fa-cubes';
+                    } else {
+                        iconClass = 'fa-solid fa-database';
+                    }
+                }
+
+                // Title Selection: Optional tabName || Clean Extracted Title
+                const rawTitle = viewData.tabName || viewData.title || key;
+                const cleanTitle = rawTitle.includes('(') ? rawTitle.split('(')[0].trim() : rawTitle;
+
+                btn.innerHTML = `<i class="${iconClass}"></i> ${cleanTitle}`;
+                btn.onclick = (e) => switchView(key, btn);
+
+                tabsContainer.appendChild(btn);
+            });
+
+            // Set default initial view key
+            if (!currentView || !schemaData[currentView]) {
+                currentView = schemaKeys[0];
+            }
+        }
+
+        // Theme Switcher Function
+        function changeTheme(themeName) {
+            document.body.className = themeName;
+            localStorage.setItem('erd_theme', themeName);
+            
+            // Update SVG Marker Arrow Color dynamically
+            const accentColor = getComputedStyle(document.body).getPropertyValue('--accent-blue').trim();
+            const arrowPath = document.getElementById('arrow-path');
+            if (arrowPath) {
+                arrowPath.setAttribute('fill', accentColor);
+                arrowPath.setAttribute('stroke', accentColor);
+            }
+            
+            updateConnections();
+        }
+
+        // Initialize App
+        function initApp() {
+            // Restore Saved Theme
+            const savedTheme = localStorage.getItem('erd_theme') || 'theme-cyber-navy';
+            document.body.className = savedTheme;
+            document.getElementById('theme-select').value = savedTheme;
+
+            // 1. Render Dynamic Tabs first
+            renderTabs();
+
+            // 2. Render Canvas View
+            renderView(currentView);
+            setupPanZoom();
+        }
+
+        // Render Current View (With Auto Layout & Optional Table ID Fallback)
+        function renderView(viewKey) {
+            currentView = viewKey;
+            cardsContainer.innerHTML = '';
+
+            // Keep SVG Defs
+            const defs = svgOverlay.querySelector('defs').outerHTML;
+            svgOverlay.innerHTML = defs;
+            selectedTableId = null;
+
+            const view = schemaData[viewKey];
+            if (!view) return;
+
+            // Render Table Cards (Auto Grid Layout if x, y missing)
+            const colsPerRow = 3;
+            view.tables.forEach((table, idx) => {
+                // Guaranteed Fallback for table.id
+                table.id = table.id || table.name;
+
+                // Auto Layout Computation if x, y missing
+                if (typeof table.x === 'undefined' || typeof table.y === 'undefined') {
+                    const col = idx % colsPerRow;
+                    const row = Math.floor(idx / colsPerRow);
+                    table.x = 60 + col * 520;
+                    table.y = 80 + row * 400;
+                }
+
+                const card = document.createElement('div');
+                card.className = 'table-card';
+                card.id = `card-${table.id}`;
+                card.style.left = `${table.x}px`;
+                card.style.top = `${table.y}px`;
+
+                card.innerHTML = `
+                    <div class="table-header" onmousedown="startDragCard(event, '${table.id}')">
+                        <div class="table-title">
+                            <span class="table-name">${table.name}</span>
+                            <span class="table-desc">${table.desc || ''}</span>
+                        </div>
+                        <span class="table-badge">TABLE</span>
+                    </div>
+                    <div class="column-list">
+                        ${table.columns.map(col => `
+                            <div class="column-row" id="col-${table.id}-${col.name}">
+                                <div class="column-left">
+                                    <span class="key-badge ${col.pk ? 'key-pk' : (col.fk ? 'key-fk' : 'key-none')}">
+                                        ${col.pk ? 'PK' : (col.fk ? 'FK' : '')}
+                                    </span>
+                                    <span class="col-name">${col.name}</span>
+                                </div>
+                                <span class="col-type">${col.type}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+
+                card.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectTable(table);
+                });
+
+                cardsContainer.appendChild(card);
+            });
+
+            // Draw Connection Lines
+            requestAnimationFrame(() => updateConnections());
+        }
+
+        // Smart Connection Line Routing (With Composite Key & Optional Cardinality Fallback)
+        function updateConnections() {
+            const defs = svgOverlay.querySelector('defs').outerHTML;
+            svgOverlay.innerHTML = defs;
+
+            const view = schemaData[currentView];
+            if (!view || !view.relations) return;
+
+            const accentColor = getComputedStyle(document.body).getPropertyValue('--accent-blue').trim();
+
+            view.relations.forEach(rel => {
+                // Support Composite Keys (Array or String)
+                const firstFromCol = Array.isArray(rel.fromCol) ? rel.fromCol[0] : rel.fromCol;
+                const firstToCol = Array.isArray(rel.toCol) ? rel.toCol[0] : rel.toCol;
+
+                const fromColElem = document.getElementById(`col-${rel.from}-${firstFromCol}`);
+                const toColElem = document.getElementById(`col-${rel.to}-${firstToCol}`);
+                const fromCard = document.getElementById(`card-${rel.from}`);
+                const toCard = document.getElementById(`card-${rel.to}`);
+
+                if (!fromColElem || !toColElem || !fromCard || !toCard) return;
+
+                const fromRect = fromColElem.getBoundingClientRect();
+                const toRect = toColElem.getBoundingClientRect();
+                const fromCardRect = fromCard.getBoundingClientRect();
+                const toCardRect = toCard.getBoundingClientRect();
+                const canvasRect = canvasLayer.getBoundingClientRect();
+
+                const dx = (toCardRect.left + toCardRect.width / 2) - (fromCardRect.left + fromCardRect.width / 2);
+                const dy = (toCardRect.top + toCardRect.height / 2) - (fromCardRect.top + fromCardRect.height / 2);
+                const offset = 8;
+
+                let x1, y1, x2, y2, pathData, mx, my;
+
+                if (Math.abs(dy) > Math.abs(dx) * 1.2) {
+                    x1 = (fromRect.left + fromRect.width / 2 - canvasRect.left) / scale;
+                    x2 = (toRect.left + toRect.width / 2 - canvasRect.left) / scale;
+
+                    if (dy > 0) {
+                        y1 = (fromCardRect.bottom - canvasRect.top) / scale + offset;
+                        y2 = (toCardRect.top - canvasRect.top) / scale - offset;
+                    } else {
+                        y1 = (fromCardRect.top - canvasRect.top) / scale - offset;
+                        y2 = (toCardRect.bottom - canvasRect.top) / scale + offset;
+                    }
+
+                    const cdy = Math.abs(y2 - y1) * 0.5;
+                    const cy1 = y1 + (dy > 0 ? cdy : -cdy);
+                    const cy2 = y2 + (dy > 0 ? -cdy : cdy);
+                    pathData = `M ${x1} ${y1} C ${x1} ${cy1}, ${x2} ${cy2}, ${x2} ${y2}`;
+
+                    mx = 0.125 * x1 + 0.375 * x1 + 0.375 * x2 + 0.125 * x2;
+                    my = 0.125 * y1 + 0.375 * cy1 + 0.375 * cy2 + 0.125 * y2;
+                } else {
+                    let rawX1 = (fromRect.right - canvasRect.left) / scale;
+                    y1 = (fromRect.top + fromRect.height / 2 - canvasRect.top) / scale;
+                    let rawX2 = (toRect.left - canvasRect.left) / scale;
+                    y2 = (toRect.top + toRect.height / 2 - canvasRect.top) / scale;
+
+                    if (rawX1 < rawX2) {
+                        x1 = rawX1 + offset;
+                        x2 = rawX2 - offset;
+                    } else {
+                        x1 = (fromRect.left - canvasRect.left) / scale - offset;
+                        x2 = (toRect.right - canvasRect.left) / scale + offset;
+                    }
+
+                    const cdx = Math.abs(x2 - x1) * 0.5;
+                    const cx1 = x1 + (rawX1 < rawX2 ? cdx : -cdx);
+                    const cx2 = x2 + (rawX1 < rawX2 ? -cdx : cdx);
+                    pathData = `M ${x1} ${y1} C ${cx1} ${y1}, ${cx2} ${y2}, ${x2} ${y2}`;
+
+                    mx = 0.125 * x1 + 0.375 * cx1 + 0.375 * cx2 + 0.125 * x2;
+                    my = 0.125 * y1 + 0.375 * y1 + 0.375 * y2 + 0.125 * y2;
+                }
+
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', pathData);
+                path.setAttribute('class', 'connection-line');
+                path.setAttribute('marker-end', 'url(#marker-arrow)');
+
+                if (rel.identifying) {
+                    path.style.strokeDasharray = 'none';
+                } else {
+                    path.style.strokeDasharray = '8, 5';
+                }
+
+                path.id = `line-${rel.from}-${rel.to}`;
+                svgOverlay.appendChild(path);
+
+                // Render Floating Cardinality & Composite Key Badge (Fallback cardinality: "1 : N")
+                const cardBase = rel.cardinality || "1 : N";
+                const isComposite = Array.isArray(rel.fromCol);
+                const badgeLabel = isComposite ? `${rel.fromCol.join(', ')} (${cardBase})` : cardBase;
+
+                const badgeG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                const badgeWidth = badgeLabel.length * 8.5 + 16;
+                const badgeHeight = 18;
+
+                const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                bgRect.setAttribute('x', mx - badgeWidth / 2);
+                bgRect.setAttribute('y', my - badgeHeight / 2);
+                bgRect.setAttribute('width', badgeWidth);
+                bgRect.setAttribute('height', badgeHeight);
+                bgRect.setAttribute('rx', 4);
+                bgRect.setAttribute('fill', '#090d16');
+                bgRect.setAttribute('stroke', accentColor);
+                bgRect.setAttribute('stroke-width', '1.2');
+
+                const badgeText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                badgeText.setAttribute('x', mx);
+                badgeText.setAttribute('y', my + 3.5);
+                badgeText.setAttribute('fill', accentColor);
+                badgeText.setAttribute('font-size', '9.5px');
+                badgeText.setAttribute('font-family', "'Fira Code', 'Courier New', monospace");
+                badgeText.setAttribute('font-weight', 'bold');
+                badgeText.setAttribute('text-anchor', 'middle');
+                badgeText.textContent = badgeLabel;
+
+                badgeG.appendChild(bgRect);
+                badgeG.appendChild(badgeText);
+                svgOverlay.appendChild(badgeG);
+            });
+        }
+
+        // Switch View Tabs with Active Highlight Toggle
+        function switchView(viewKey, btnElement) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            if (btnElement) {
+                btnElement.classList.add('active');
+            } else {
+                const targetBtn = document.getElementById(`tab-btn-${viewKey}`);
+                if (targetBtn) targetBtn.classList.add('active');
+            }
+            renderView(viewKey);
+        }
+
+        // Pan and Zoom Mechanics
+        function setupPanZoom() {
+            workspace.addEventListener('mousedown', (e) => {
+                if (e.target === workspace || e.target === canvasLayer || e.target === svgOverlay) {
+                    isPanning = true;
+                    startX = e.clientX - panX;
+                    startY = e.clientY - panY;
+                }
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isPanning) return;
+                panX = e.clientX - startX;
+                panY = e.clientY - startY;
+                applyTransform();
+            });
+
+            window.addEventListener('mouseup', () => { isPanning = false; });
+
+            workspace.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+                zoomCanvas(zoomFactor);
+            });
+        }
+
+        function zoomCanvas(factor) {
+            scale = Math.min(Math.max(0.4, scale * factor), 2.5);
+            applyTransform();
+        }
+
+        function resetZoom() {
+            scale = 1;
+            panX = 0;
+            panY = 0;
+            applyTransform();
+        }
+
+        function applyTransform() {
+            canvasLayer.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+            document.getElementById('zoom-text').innerText = `${Math.round(scale * 100)}%`;
+            updateConnections();
+        }
+
+        // Drag Table Cards
+        let draggingTable = null;
+        let dragOffX = 0, dragOffY = 0;
+
+        function startDragCard(e, tableId) {
+            e.stopPropagation();
+            draggingTable = schemaData[currentView].tables.find(t => (t.id || t.name) === tableId);
+            const card = document.getElementById(`card-${tableId}`);
+            
+            dragOffX = (e.clientX - panX) / scale - draggingTable.x;
+            dragOffY = (e.clientY - panY) / scale - draggingTable.y;
+
+            const onMouseMove = (moveEvent) => {
+                if (!draggingTable) return;
+                draggingTable.x = (moveEvent.clientX - panX) / scale - dragOffX;
+                draggingTable.y = (moveEvent.clientY - panY) / scale - dragOffY;
+                card.style.left = `${draggingTable.x}px`;
+                card.style.top = `${draggingTable.y}px`;
+                updateConnections();
+            };
+
+            const onMouseUp = () => {
+                draggingTable = null;
+                window.removeEventListener('mousemove', onMouseMove);
+                window.removeEventListener('mouseup', onMouseUp);
+            };
+
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+        }
+
+        // Select Table & Inspector Drawer with Guaranteed Monospace Alignment
+        function selectTable(table) {
+            selectedTableId = table.id || table.name;
+            document.querySelectorAll('.table-card').forEach(c => c.classList.remove('selected'));
+            document.getElementById(`card-${selectedTableId}`).classList.add('selected');
+
+            document.getElementById('drawer-table-name').innerText = table.name;
+            document.getElementById('drawer-table-desc').innerText = table.desc || '';
+
+            const maxColLen = Math.max(...table.columns.map(c => c.name.length), 22);
+
+            let ddl = `CREATE TABLE ${table.name} (\n`;
+            table.columns.forEach((c, idx) => {
+                const isLast = idx === table.columns.length - 1;
+                const paddedName = c.name.padEnd(maxColLen + 4, ' ');
+                const pkClause = c.pk ? ' PRIMARY KEY' : '';
+                ddl += `    ${paddedName}${c.type}${pkClause}${isLast ? '' : ','}\n`;
+            });
+            ddl += `);`;
+            document.getElementById('ddl-text').innerText = ddl;
+
+            let mock = `INSERT INTO ${table.name} (\n`;
+            table.columns.forEach((c, idx) => {
+                const isLast = idx === table.columns.length - 1;
+                mock += `    ${c.name}${isLast ? '' : ','}\n`;
+            });
+            mock += `) VALUES (\n`;
+            table.columns.forEach((c, idx) => {
+                const isLast = idx === table.columns.length - 1;
+                const val = c.type.includes('VARCHAR') ? `'STD_VALUE'` : (c.type === 'DATE' ? 'SYSDATE' : '100');
+                mock += `    ${val}${isLast ? '' : ','}\n`;
+            });
+            mock += `);`;
+            document.getElementById('mock-text').innerText = mock;
+
+            document.getElementById('inspector').classList.add('open');
+        }
+
+        function toggleInspector() {
+            document.getElementById('inspector').classList.toggle('open');
+        }
+
+        // Copy Code Helper
+        function copyCode(elementId) {
+            const text = document.getElementById(elementId).innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('코드가 클립보드에 복사되었습니다!');
+            });
+        }
+
+        // Search Filter
+        function handleSearch() {
+            const query = document.getElementById('search-input').value.toLowerCase().trim();
+            const view = schemaData[currentView];
+            if (!view) return;
+
+            view.tables.forEach(table => {
+                const tableId = table.id || table.name;
+                const card = document.getElementById(`card-${tableId}`);
+                const matches = table.name.toLowerCase().includes(query) || 
+                                (table.desc && table.desc.toLowerCase().includes(query)) ||
+                                table.columns.some(c => c.name.toLowerCase().includes(query));
+
+                if (query === '' || matches) {
+                    card.classList.remove('dimmed');
+                } else {
+                    card.classList.add('dimmed');
+                }
+            });
+        }
+
+        // Run App
+        window.onload = initApp;
+    </script>
+</body>
+</html>
