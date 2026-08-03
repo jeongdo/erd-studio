@@ -1,0 +1,280 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply box-border m-0 p-0 select-none;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    @apply bg-bg-dark text-text-main overflow-hidden w-screen h-screen transition-colors duration-300;
+  }
+}
+
+@layer components {
+  /* Top Navigation Header */
+  header {
+    @apply absolute top-0 left-0 right-0 h-[60px] bg-slate-900/85 backdrop-blur-md border-b border-panel-border flex items-center justify-between px-6 z-[100];
+  }
+
+  .brand {
+    font-family: 'Outfit', sans-serif;
+    @apply flex items-center gap-3 font-bold text-xl text-text-main;
+  }
+
+  .brand-badge {
+    @apply bg-gradient-to-br from-accent-blue to-accent-purple text-white text-[0.7rem] py-[2px] px-2 rounded-xl uppercase tracking-wide;
+  }
+
+  /* View Mode Tabs (Dynamic Auto-Generated) */
+  .tabs-container {
+    @apply flex gap-1.5 bg-slate-900/60 p-1 rounded-lg border border-panel-border;
+  }
+
+  .tab-btn {
+    @apply bg-transparent border-none text-text-muted py-2 px-4 rounded-md text-[0.85rem] font-medium cursor-pointer transition-all duration-200 flex items-center gap-2;
+  }
+
+  .tab-btn:hover {
+    @apply text-text-main bg-white/5;
+  }
+
+  .tab-btn.active {
+    @apply bg-accent-blue text-[#090d16] font-semibold;
+    box-shadow: 0 0 12px var(--line-glow);
+  }
+
+  /* Controls Toolbar */
+  .toolbar {
+    @apply flex items-center gap-3;
+  }
+
+  .theme-dropdown {
+    font-family: 'Inter', sans-serif;
+    @apply bg-slate-800/70 border border-panel-border rounded-md text-text-main py-[7px] px-3 text-[0.82rem] outline-none cursor-pointer transition-all duration-200;
+  }
+
+  .theme-dropdown:hover {
+    @apply border-accent-blue;
+  }
+
+  .theme-dropdown option {
+    @apply bg-slate-900 text-slate-50;
+  }
+
+  .search-box {
+    @apply relative;
+  }
+
+  .search-box input {
+    @apply bg-slate-800/60 border border-panel-border rounded-md text-text-main py-2 pr-3 pl-[34px] text-[0.85rem] outline-none w-[180px] transition-all duration-300;
+  }
+
+  .search-box input:focus {
+    @apply w-[240px] border-accent-blue;
+  }
+
+  .search-box i {
+    @apply absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[0.85rem];
+  }
+
+  .btn-icon {
+    @apply w-9 h-9 rounded-md bg-slate-800/60 border border-panel-border text-text-main flex items-center justify-center cursor-pointer transition-all duration-200;
+  }
+
+  .btn-icon:hover {
+    @apply bg-sky-400/20 border-accent-blue text-accent-blue;
+  }
+
+  /* Main Workspace Container */
+  .workspace {
+    @apply absolute top-[60px] left-0 right-0 bottom-0 overflow-hidden bg-bg-canvas cursor-grab transition-colors duration-300;
+    background-image: 
+        radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 0),
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 24px 24px, 120px 120px, 120px 120px;
+  }
+
+  .workspace:active {
+    @apply cursor-grabbing;
+  }
+
+  /* Canvas Transform Layer */
+  #canvas-layer {
+    @apply absolute top-0 left-0 w-full h-full origin-top-left;
+  }
+
+  /* SVG Connection Lines Overlay */
+  #connections-svg {
+    @apply absolute top-0 left-0 w-[5000px] h-[5000px] pointer-events-none z-10;
+  }
+
+  path.connection-line {
+    @apply fill-none stroke-line-color stroke-[2.5];
+    transition: stroke 0.3s ease, stroke-width 0.3s ease;
+    filter: drop-shadow(0 0 6px var(--line-glow));
+  }
+
+  path.connection-line.highlighted {
+    @apply stroke-accent-amber stroke-[3.5];
+    filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.9));
+  }
+
+  path.connection-line.dimmed {
+    @apply opacity-35;
+  }
+
+  /* Table Card Element */
+  .table-card {
+    @apply absolute min-w-[360px] bg-card-bg backdrop-blur-md rounded-xl border border-panel-border z-20 cursor-default;
+    transition: box-shadow 0.3s ease, border-color 0.3s ease, opacity 0.3s ease, background 0.3s ease;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  }
+
+  .table-card:hover {
+    @apply border-accent-blue;
+    box-shadow: 0 16px 40px var(--line-glow);
+  }
+
+  .table-card.selected {
+    @apply border-accent-blue;
+    box-shadow: 0 0 0 2px var(--accent-blue), 0 16px 40px var(--line-glow);
+  }
+
+  .table-card.dimmed {
+    @apply opacity-35;
+  }
+
+  /* Table Header */
+  .table-header {
+    @apply bg-card-header py-3 px-4 rounded-t-xl border-b border-panel-border cursor-move flex items-center justify-between;
+  }
+
+  .table-title {
+    @apply flex flex-col gap-[2px];
+  }
+
+  .table-name {
+    font-family: 'Fira Code', 'Courier New', monospace;
+    @apply font-semibold text-[0.92rem] text-accent-blue;
+  }
+
+  .table-desc {
+    @apply text-[0.75rem] text-text-muted;
+  }
+
+  .table-badge {
+    @apply bg-white/10 text-accent-blue text-[0.65rem] py-[3px] px-[6px] rounded font-semibold border border-panel-border;
+  }
+
+  /* Columns List */
+  .column-list {
+    @apply py-2 px-0;
+  }
+
+  .column-row {
+    @apply flex items-center justify-between py-[7px] px-[18px] text-[0.82rem] transition-colors duration-200 relative;
+  }
+
+  .column-row:hover {
+    @apply bg-white/5;
+  }
+
+  .column-left {
+    @apply flex items-center gap-[10px];
+  }
+
+  .key-badge {
+    @apply text-[0.65rem] font-bold w-6 h-4 rounded-[3px] flex items-center justify-center;
+  }
+
+  .key-pk {
+    @apply bg-rose-500/20 text-accent-rose border border-rose-500/40;
+  }
+
+  .key-fk {
+    @apply bg-sky-500/20 text-accent-blue border border-panel-border;
+  }
+
+  .key-none {
+    @apply invisible w-6;
+  }
+
+  .col-name {
+    font-family: 'Fira Code', 'Courier New', monospace;
+    @apply text-text-main;
+  }
+
+  .col-type {
+    font-family: 'Fira Code', 'Courier New', monospace;
+    @apply text-[0.74rem] text-text-muted pl-3;
+  }
+
+  /* Floating Zoom Controls */
+  .zoom-controls {
+    @apply absolute bottom-6 left-6 bg-panel-bg backdrop-blur-md border border-panel-border rounded-lg flex items-center p-1 gap-1 z-[80] shadow-2xl;
+  }
+
+  .zoom-percentage {
+    font-family: 'Fira Code', 'Courier New', monospace;
+    @apply text-[0.8rem] px-2 text-text-muted min-w-[48px] text-center;
+  }
+
+  /* Legend Bar */
+  .legend-bar {
+    @apply absolute bottom-6 right-6 bg-panel-bg backdrop-blur-md border border-panel-border rounded-lg flex items-center py-2 px-4 gap-4 z-[80] text-[0.75rem] text-text-muted shadow-2xl;
+  }
+
+  .legend-item {
+    @apply flex items-center gap-[6px];
+  }
+
+  .legend-line {
+    @apply w-6 h-[3px] bg-accent-blue;
+  }
+
+  .legend-line.dashed {
+    background: repeating-linear-gradient(90deg, var(--accent-blue) 0 4px, transparent 4px 8px);
+  }
+
+  /* Slide-out Inspector Drawer */
+  .inspector-drawer {
+    @apply absolute top-[60px] right-[-480px] w-[460px] bottom-0 bg-panel-bg backdrop-blur-xl border-l border-panel-border z-[90] flex flex-col shadow-[-12px_0_32px_rgba(0,0,0,0.5)];
+    transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease;
+  }
+
+  .inspector-drawer.open {
+    @apply right-0;
+  }
+
+  .drawer-header {
+    @apply py-5 px-6 border-b border-panel-border flex items-center justify-between;
+  }
+
+  .drawer-title {
+    font-family: 'Fira Code', 'Courier New', monospace;
+    @apply text-[1.1rem] text-accent-blue;
+  }
+
+  .drawer-content {
+    @apply flex-1 overflow-y-auto p-5 flex flex-col gap-5;
+  }
+
+  /* Pure Monospace SQL Code Box */
+  .sql-box-container {
+    @apply relative bg-black/50 border border-panel-border rounded-lg p-4 overflow-x-auto;
+  }
+
+  pre.sql-code-block {
+    font-family: 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace !important;
+    font-variant-numeric: tabular-nums;
+    @apply text-[0.78rem] leading-[1.55] text-accent-blue m-0 whitespace-pre break-normal;
+  }
+
+  .copy-btn {
+    @apply absolute top-2 right-2 bg-white/10 border border-white/10 text-text-main py-1 px-2 rounded font-sans text-[0.7rem] cursor-pointer transition-all duration-200 z-10 hover:bg-accent-blue hover:text-[#090d16];
+  }
+}
