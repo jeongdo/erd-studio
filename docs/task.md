@@ -142,3 +142,24 @@
     - `Toolbar.tsx`, `Sidebar.tsx`, `Inspector.tsx`
     - `Minimap.tsx`, `ContextMenu.tsx`, `ZoomControls.tsx`
   - hooks 분리: `usePanZoom`, `useConnections`, `useHistory`, `useDrag`, `useKeyboard`
+
+---
+
+## ⚡ 성능 최적화 (대규모 ERD 300+ 테이블 대응)
+
+> 현재 SVG DOM 직접 조작 방식은 30~50개까지 쾌적. 300개 이상 시 아래 단계적 최적화 적용.
+
+- [ ] **Step 1: 뷰포트 컬링 (Virtual Viewport)** — 최우선
+  - 화면에 보이는 테이블과 선만 렌더링, 밖에 있는 요소는 DOM에서 제거
+  - 팬/줌 시 동적으로 가시 영역 재계산하여 붙였다 뗐다
+  - 이것만으로도 300~1000개 테이블도 체감 성능 30개 수준 유지
+- [ ] **Step 2: 연결선 Canvas 2D 전환** — 선이 병목일 때
+  - 테이블 카드는 DOM 유지 (텍스트/인터랙션), 연결선만 Canvas로 전환
+  - DOM 노드 없이 픽셀 드로잉이라 선 500개도 거뜬
+- [ ] **Step 3: WebGL (PixiJS)** — 극한 성능
+  - GPU 가속 렌더링, 1000개 이상 노드도 60fps 유지
+  - 텍스트 렌더링 및 CSS 테마 연동 공수 필요
+- [ ] **SVG 즉시 적용 가능한 최적화**
+  - 여러 path를 하나의 `<path d="...">`로 배칭 (DOM 노드 수 감소)
+  - `will-change: transform` GPU 합성 힌트
+  - `content-visibility: auto`로 화면 밖 요소 렌더 스킵
