@@ -185,8 +185,14 @@
 
         // Smart Connection Line Routing (With Composite Key & Optional Cardinality Fallback)
         function updateConnections() {
-            const defs = svgOverlay.querySelector('defs').outerHTML;
-            svgOverlay.innerHTML = defs;
+            try {
+                // Safely clear old paths/badges without destroying <defs>
+                const children = Array.from(svgOverlay.children);
+                children.forEach(child => {
+                    if (child.tagName.toLowerCase() !== 'defs') {
+                        svgOverlay.removeChild(child);
+                    }
+                });
 
             const view = schemaData[currentView];
             if (!view || !view.relations) return;
@@ -224,13 +230,13 @@
                     x2 = (toRect.left + toRect.width / 2 - canvasRect.left) / scale;
 
                     if (cardDy > 0) {
-                        // from is above to
-                        y1 = (fromRect.bottom - canvasRect.top) / scale + offset;  // FIX: column bottom
-                        y2 = (toRect.top - canvasRect.top) / scale - offset;         // FIX: column top
+                        // from is above to (use Card bounds to prevent piercing)
+                        y1 = (fromCardRect.bottom - canvasRect.top) / scale + offset;
+                        y2 = (toCardRect.top - canvasRect.top) / scale - offset;
                     } else {
                         // from is below to
-                        y1 = (fromRect.top - canvasRect.top) / scale - offset;       // FIX: column top
-                        y2 = (toRect.bottom - canvasRect.top) / scale + offset;      // FIX: column bottom
+                        y1 = (fromCardRect.top - canvasRect.top) / scale - offset;
+                        y2 = (toCardRect.bottom - canvasRect.top) / scale + offset;
                     }
 
                     const distY = Math.abs(y2 - y1);
@@ -323,8 +329,10 @@
                 badgeG.appendChild(badgeText);
                 svgOverlay.appendChild(badgeG);
             });
+            } catch (err) {
+                console.error("Error in updateConnections:", err);
+            }
         }
-        //
         // // Smart Connection Line Routing (With Composite Key & Optional Cardinality Fallback)
         // function updateConnections() {
         //     const defs = svgOverlay.querySelector('defs').outerHTML;
@@ -524,6 +532,76 @@
                 draggingTable.y = (moveEvent.clientY - panY) / scale - dragOffY;
                 card.style.left = `${draggingTable.x}px`;
                 card.style.top = `${draggingTable.y}px`;
+
+                // --- Magnetic Repulsion (Cascading) Logic ---
+                const MIN_GAP = 60;
+                const MAX_ITERATIONS = 5;
+                let resolved = false;
+                const tables = schemaData[currentView].tables;
+                
+                for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
+                    resolved = true;
+                    for (let i = 0; i < tables.length; i++) {
+                        for (let j = i + 1; j < tables.length; j++) {
+                            const t1 = tables[i];
+                            const t2 = tables[j];
+
+                            const card1 = document.getElementById(`card-${t1.id || t1.name}`);
+                            const card2 = document.getElementById(`card-${t2.id || t2.name}`);
+                            if (!card1 || !card2) continue;
+
+                            const w1 = card1.offsetWidth;
+                            const h1 = card1.offsetHeight;
+                            const w2 = card2.offsetWidth;
+                            const h2 = card2.offsetHeight;
+
+                            const c1x = t1.x + w1 / 2;
+                            const c1y = t1.y + h1 / 2;
+                            const c2x = t2.x + w2 / 2;
+                            const c2y = t2.y + h2 / 2;
+
+                            const dx = c2x - c1x;
+                            const dy = c2y - c1y;
+                            
+                            const overlapX = (w1 / 2 + w2 / 2 + MIN_GAP) - Math.abs(dx);
+                            const overlapY = (h1 / 2 + h2 / 2 + MIN_GAP) - Math.abs(dy);
+
+                            if (overlapX > 0 && overlapY > 0) {
+                                resolved = false;
+                                
+                                let push1 = 0, push2 = 0;
+                                if (t1 === draggingTable) push2 = 1;
+                                else if (t2 === draggingTable) push1 = 1;
+                                else { push1 = 0.5; push2 = 0.5; }
+
+                                const signX = dx === 0 ? 1 : Math.sign(dx);
+                                const signY = dy === 0 ? 1 : Math.sign(dy);
+
+                                if (overlapX < overlapY) {
+                                    t1.x -= signX * overlapX * push1;
+                                    t2.x += signX * overlapX * push2;
+                                } else {
+                                    t1.y -= signY * overlapY * push1;
+                                    t2.y += signY * overlapY * push2;
+                                }
+                            }
+                        }
+                    }
+                    if (resolved) break;
+                }
+
+                // Apply updated positions to DOM
+                tables.forEach(t => {
+                    if (t !== draggingTable) {
+                        const c = document.getElementById(`card-${t.id || t.name}`);
+                        if (c) {
+                            c.style.left = `${t.x}px`;
+                            c.style.top = `${t.y}px`;
+                        }
+                    }
+                });
+                // --------------------------------
+
                 updateConnections();
             };
 

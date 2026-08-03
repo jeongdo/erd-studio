@@ -110,7 +110,7 @@
 
   /* SVG Connection Lines Overlay */
   #connections-svg {
-    @apply absolute top-0 left-0 w-[5000px] h-[5000px] pointer-events-none z-10;
+    @apply absolute top-0 left-0 w-[5000px] h-[5000px] pointer-events-none z-10 overflow-visible;
   }
 
   path.connection-line {
