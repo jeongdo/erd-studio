@@ -9,6 +9,7 @@
 
   body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    line-height: normal;
     @apply bg-bg-dark text-text-main overflow-hidden w-screen h-screen transition-colors duration-300;
   }
 }
@@ -150,7 +151,8 @@
 
   /* Table Header */
   .table-header {
-    @apply bg-card-header py-3 px-4 rounded-t-xl border-b border-panel-border cursor-move flex items-center justify-between;
+    @apply flex items-center justify-between py-[12px] px-[16px] border-b border-panel-border cursor-move select-none relative;
+    border-radius: 12px 12px 0 0;
   }
 
   .table-title {
@@ -172,7 +174,7 @@
 
   /* Columns List */
   .column-list {
-    @apply py-2 px-0;
+    @apply flex flex-col py-[8px] overflow-y-auto;
   }
 
   .column-row {
