@@ -42,6 +42,12 @@
                 <i class="fa-solid fa-search"></i>
                 <input type="text" id="search-input" placeholder="테이블/컬럼 실시간 검색..." onkeyup="handleSearch()">
             </div>
+            
+            <div style="width: 1px; height: 24px; background: var(--panel-border); margin: 0 4px;"></div>
+            
+            <button class="btn-icon" onclick="applyLayout('grid')" title="자동 정렬 (격자형)"><i class="fa-solid fa-table-cells-large"></i></button>
+            
+            <div style="width: 1px; height: 24px; background: var(--panel-border); margin: 0 4px;"></div>
             <button class="btn-icon" onclick="resetZoom()" title="화면 맞춤"><i class="fa-solid fa-compress"></i></button>
             <button class="btn-icon" onclick="toggleInspector()" title="인스펙터 열기/닫기"><i class="fa-solid fa-sidebar"></i></button>
         </div>

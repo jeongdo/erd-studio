@@ -686,5 +686,188 @@
             });
         }
 
+        // ==========================================
+        // Auto-Layout System
+        // ==========================================
+        let layoutAnimFrame = null;
+
+        function applyLayout(type) {
+            const view = schemaData[currentView];
+            if (!view || !view.tables || view.tables.length === 0) return;
+
+            const tables = view.tables;
+            const relations = view.relations || [];
+
+            // Calculate Target Positions
+            let targetPositions = {};
+
+            if (type === 'grid') {
+                const cols = Math.ceil(Math.sqrt(tables.length));
+                tables.forEach((t, i) => {
+                    targetPositions[t.id || t.name] = {
+                        x: 100 + (i % cols) * 450,
+                        y: 100 + Math.floor(i / cols) * 450
+                    };
+                });
+            } 
+            else if (type === 'tree') {
+                // Simple Hierarchical layout (Left to Right)
+                let depths = {};
+                tables.forEach(t => depths[t.id || t.name] = 0);
+
+                // Calculate depth based on relations (from -> to pushes 'to' deeper)
+                let changed = true;
+                let iters = 0;
+                while (changed && iters < 100) {
+                    changed = false;
+                    relations.forEach(rel => {
+                        const fromDepth = depths[rel.from];
+                        const toDepth = depths[rel.to];
+                        if (toDepth <= fromDepth) {
+                            depths[rel.to] = fromDepth + 1;
+                            changed = true;
+                        }
+                    });
+                    iters++;
+                }
+
+                // Group by depth
+                let depthGroups = {};
+                tables.forEach(t => {
+                    const id = t.id || t.name;
+                    const d = depths[id];
+                    if (!depthGroups[d]) depthGroups[d] = [];
+                    depthGroups[d].push(id);
+                });
+
+                // Layout
+                const startX = 100, startY = 100;
+                const gapX = 550, gapY = 450;
+                Object.keys(depthGroups).forEach(dStr => {
+                    const d = parseInt(dStr);
+                    const group = depthGroups[dStr];
+                    group.forEach((id, idx) => {
+                        targetPositions[id] = {
+                            x: startX + d * gapX,
+                            y: startY + idx * gapY
+                        };
+                    });
+                });
+            } 
+            else if (type === 'organic') {
+                // Simple Force-Directed Layout
+                // Initialize positions
+                let simTables = tables.map(t => ({
+                    id: t.id || t.name,
+                    x: (t.x || 0) + Math.random() * 50,
+                    y: (t.y || 0) + Math.random() * 50,
+                    vx: 0, vy: 0
+                }));
+
+                const iterations = 150;
+                const k = 0.05; // spring constant
+                const repulsion = 500000;
+                const damping = 0.5;
+
+                for (let i = 0; i < iterations; i++) {
+                    // Repulsion
+                    for (let a = 0; a < simTables.length; a++) {
+                        for (let b = a + 1; b < simTables.length; b++) {
+                            const ta = simTables[a], tb = simTables[b];
+                            let dx = ta.x - tb.x;
+                            let dy = ta.y - tb.y;
+                            let distSq = dx * dx + dy * dy || 1;
+                            let force = repulsion / distSq;
+                            let dist = Math.sqrt(distSq);
+                            let fx = (dx / dist) * force;
+                            let fy = (dy / dist) * force;
+                            ta.vx += fx; ta.vy += fy;
+                            tb.vx -= fx; tb.vy -= fy;
+                        }
+                    }
+
+                    // Attraction (Springs)
+                    relations.forEach(rel => {
+                        const ta = simTables.find(t => t.id === rel.from);
+                        const tb = simTables.find(t => t.id === rel.to);
+                        if (ta && tb) {
+                            let dx = tb.x - ta.x;
+                            let dy = tb.y - ta.y;
+                            let fx = dx * k;
+                            let fy = dy * k;
+                            ta.vx += fx; ta.vy += fy;
+                            tb.vx -= fx; tb.vy -= fy;
+                        }
+                    });
+
+                    // Update positions
+                    simTables.forEach(t => {
+                        t.vx *= damping;
+                        t.vy *= damping;
+                        t.x += t.vx;
+                        t.y += t.vy;
+                    });
+                }
+                
+                // Shift organic layout to visible area (ensure top-left is around 100,100)
+                let minX = Infinity, minY = Infinity;
+                simTables.forEach(t => {
+                    if(t.x < minX) minX = t.x;
+                    if(t.y < minY) minY = t.y;
+                });
+                simTables.forEach(t => {
+                    targetPositions[t.id] = {
+                        x: t.x - minX + 100,
+                        y: t.y - minY + 100
+                    };
+                });
+            }
+
+            animateLayout(targetPositions);
+        }
+
+        function animateLayout(targetPositions) {
+            const view = schemaData[currentView];
+            if (!view) return;
+
+            // Apply transition class and set new positions
+            view.tables.forEach(t => {
+                const id = t.id || t.name;
+                const pos = targetPositions[id];
+                if (pos) {
+                    t.x = pos.x;
+                    t.y = pos.y;
+                    const card = document.getElementById(`card-${id}`);
+                    if (card) {
+                        card.classList.add('layout-animating');
+                        card.style.left = `${t.x}px`;
+                        card.style.top = `${t.y}px`;
+                    }
+                }
+            });
+
+            // Run RAF loop to update connections during transition (0.5s = 500ms)
+            const startTime = performance.now();
+            if (layoutAnimFrame) cancelAnimationFrame(layoutAnimFrame);
+            
+            function step(time) {
+                updateConnections(); // continuously update lines
+                if (time - startTime < 550) { // slightly longer than CSS transition (500ms)
+                    layoutAnimFrame = requestAnimationFrame(step);
+                } else {
+                    // Cleanup: remove animating class
+                    view.tables.forEach(t => {
+                        const id = t.id || t.name;
+                        const card = document.getElementById(`card-${id}`);
+                        if (card) {
+                            card.classList.remove('layout-animating');
+                        }
+                    });
+                    updateConnections();
+                }
+            }
+            layoutAnimFrame = requestAnimationFrame(step);
+        }
+
         // Run App
         window.onload = initApp;
