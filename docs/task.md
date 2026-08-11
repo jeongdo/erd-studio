@@ -14,134 +14,133 @@
 - [x] 검색 & 하이라이트
 - [x] 줌 컨트롤 (마우스 휠 + 버튼)
 - [x] 인스펙터 드로어 (DDL + Mock INSERT)
-- [x] 자동 레이아웃 (격자형 Grid + 스르르 애니메이션)
+- [x] 자동 레이아웃 (Grid / Tree / Organic UI 활성화)
 - [x] 자석 밀어내기 (Magnetic Repulsion + 연쇄 반응)
+- [x] **테이블 추가 / 편집** — 이름, 설명, 컬럼(`컬럼명 타입 [PK] [FK]`) 입력으로 현재 뷰에 즉시 생성
+- [x] **테이블 복제 / 삭제** — 관계 정리 포함
+- [x] **편집 상태 영속화** — 좌표뿐 아니라 추가/수정/삭제된 스키마 전체를 localStorage에 저장/복구
 
 ---
 
 ## 🔥 Phase 1 — 바로 해볼 만한 것들 (쉬움~중간)
 
-- [ ] **테이블 배치 상태 저장 (localStorage)**
-  - 드래그 종료 시 `localStorage`에 좌표 저장, 새로고침 시 복구
-  - 초기화 버튼 추가 (저장된 좌표 리셋)
-- [ ] **Undo / Redo**
-  - `Ctrl+Z` / `Ctrl+Shift+Z` 단축키
-  - 상태 스택 50개 (참조: `ERD_STUDIO_V1/store/schemaStore.ts` pushHistory/undo/redo)
-- [ ] **키보드 단축키**
+- [x] **테이블 배치 상태 저장 (localStorage)**
+  - 드래그 종료 시 좌표/스키마 저장, 새로고침 시 복구
+  - 저장 상태 초기화 버튼 제공
+- [x] **Undo / Redo**
+  - `Ctrl+Z` / `Ctrl+Shift+Z`
+  - 상태 스택 최대 50개
+  - 테이블 추가/편집/삭제/복제/이동/자동정렬에 적용
+- [x] **키보드 단축키**
   - `Delete` 엔티티 삭제, `Ctrl+D` 복제
   - `↑↓←→` 선택된 테이블 1px 이동, `Shift` 누르면 10px
-  - (참조: `ERD_STUDIO_V1/hooks/useKeyboard.ts`)
-- [ ] **PNG/SVG 내보내기**
-  - html2canvas 또는 SVG 직렬화로 이미지 저장
-- [ ] **그리드 스냅**
-  - 드래그 시 20px 단위 스냅, `Shift` 누르면 자유 이동
-- [ ] **테이블 우클릭 SQL 컨텍스트 메뉴**
-  - 테이블 카드 우클릭 시 팝업 메뉴로 SQL 템플릿 제공:
-    - `SELECT`, `INSERT`, `UPDATE`, `DELETE`, `MERGE`
-  - 컬럼명이 미리 채워진 상태로 생성
-  - **스마트 Mock 데이터 자동 생성**: 데이터 타입에 맞는 가상 샘플 데이터가 미리 채워짐
-    - `VARCHAR` → `'샘플값'`, `INT` + PK → 유니크 시퀀스, `DATE` → `SYSDATE` 등
-  - 하단 미리보기 영역에 완성된 SQL이 즉시 표시되고, 클릭 시 클립보드 복사
-- [ ] **다중 선택 → JOIN 쿼리 자동 생성**
-  - 테이블 2개를 클릭클릭(다중 선택) 후 우클릭 시 컨텍스트 메뉴에 "JOIN 쿼리 보기" 제공
-  - `relations`(FK 관계)를 자동 분석하여 `JOIN ON` 조건까지 채워진 SELECT 쿼리 생성
-  - 관계가 없는 두 테이블이면 `CROSS JOIN` 또는 안내 메시지 표시
-- [ ] **VO / DTO 클래스 코드 자동 생성**
-  - 테이블 스키마에서 Java VO/DTO 클래스 코드 즉시 변환
-  - 컬럼명 → camelCase 변환, DB 타입 → Java 타입 매핑 (`VARCHAR→String`, `INT→int`, `DATE→Date` 등)
-  - Getter/Setter, 기본 생성자 포함
-  - 언어 확장: Java, Kotlin, TypeScript 등 선택 가능하도록
+- [x] **PNG/SVG 내보내기**
+  - 현재 ERD 메타데이터 기준 독립 SVG 생성
+  - SVG를 Canvas로 변환하여 PNG 다운로드
+- [x] **그리드 스냅**
+  - 드래그 종료 시 20px 단위 스냅
+  - `Shift` 누른 채 드래그 종료 시 자유 배치
+- [x] **테이블 우클릭 SQL 컨텍스트 메뉴**
+  - `SELECT`, `INSERT`, `UPDATE`, `DELETE`, `MERGE`
+  - 컬럼 자동 채움
+  - 타입/PK 기반 스마트 Mock 값 생성
+  - 하단 Developer Output 패널 + 클립보드 복사
+- [x] **다중 선택 → JOIN 쿼리 자동 생성**
+  - `Ctrl+Click`으로 테이블 2개 다중 선택
+  - 직접 FK 관계 자동 분석 후 `JOIN ON` 생성
+  - 직접 관계가 없으면 `CROSS JOIN` + 안내
+- [x] **VO / DTO 클래스 코드 자동 생성**
+  - 컬럼명 camelCase 변환
+  - DB 타입 → 언어 타입 기본 매핑
+  - Java DTO(Getter/Setter/기본 생성자), Kotlin data class, TypeScript interface 지원
 - [ ] **쿼리 템플릿 엔진 (DataGrip 스타일)**
-  - 기본 제공 템플릿: `SELECT TOP 10`, `SELECT COUNT(*)`, `GROUP BY`, `ORDER BY DESC` 등
-  - 변수 치환 시스템: `${TABLE}`, `${COLUMNS}`, `${PK}` 등을 ERD 메타데이터로 자동 바인딩
-  - 사용자 커스텀 템플릿 추가/편집/삭제 가능 (localStorage에 저장)
-  - 우클릭 컨텍스트 메뉴에서 템플릿 목록 선택 → 즉시 SQL 생성 + 클립보드 복사
-- [ ] **테이블 간 경로 탐색 (Join Path Finder)**
-  - 테이블 2개 선택 시 "이 두 테이블을 조인하려면?" → FK 관계를 따라 중간 경유 테이블 + JOIN 경로를 자동 탐색
-  - 경로가 여러 개면 최단 경로 / 전체 경로 모두 표시
-  - 시각적으로 해당 경로의 선을 하이라이트하고, 완성된 다중 JOIN 쿼리까지 생성
-- [ ] **INSERT 순서 가이드 (Dependency Order)**
-  - FK 의존성을 분석하여 "마스터 테이블 → 자식 테이블" 순서대로 INSERT 해야 하는 순서를 자동 계산
-  - 위상 정렬(Topological Sort)로 전체 테이블의 데이터 투입 순서 시각화
-  - 역순으로 DELETE 순서도 함께 제공
-- [ ] **테이블 명세서 자동 생성 (Markdown/Excel)**
-  - ERD 메타데이터에서 `테이블명 | 컬럼명 | 타입 | PK/FK | 설명` 형태의 산출물 문서 자동 생성
-  - Markdown / CSV / Excel 다운로드 지원
-- [ ] **영향도 분석 (Impact Analysis)**
-  - 테이블 선택 후 "영향도 보기" → FK로 연결된 하위 테이블 전부를 연쇄적으로 하이라이트
-  - 스키마 변경 시 어디까지 영향 받는지 사전 파악
-- [ ] **데이터 계보 추적 (Data Lineage)**
-  - FK를 역방향으로 추적하여 "이 데이터의 원본 마스터 테이블"까지 경로 시각화
-  - 선이 역방향으로 하이라이트되며 올라가는 연출
+  - [x] 기본 템플릿: `SELECT TOP 10`, `COUNT`, `PK LOOKUP`, `ORDER BY DESC`
+  - [x] `${TABLE}`, `${COLUMNS}`, `${PK}` 변수 치환
+  - [x] 사용자 템플릿 추가 + localStorage 저장
+  - [ ] 사용자 템플릿 편집/삭제 UI
+- [x] **테이블 간 경로 탐색 (Join Path Finder)**
+  - 테이블 2개 선택 시 FK 그래프 탐색
+  - 최단 경로 + 최대 20개 경로 탐색/표시
+  - 최단 경로 기반 다중 JOIN SQL 생성
+  - 해당 테이블/관계선 시각적 포커스
+- [x] **INSERT 순서 가이드 (Dependency Order)**
+  - FK 방향 기준 위상 정렬
+  - INSERT 순서와 역순 DELETE 순서 제공
+  - 순환/자기참조 후보 별도 경고
+- [x] **테이블 명세서 자동 생성 (Markdown/Excel)**
+  - `테이블명 | 설명 | 컬럼명 | 타입 | PK/FK`
+  - Markdown / CSV / Excel(SpreadsheetML .xls) 다운로드
+- [x] **영향도 분석 (Impact Analysis)**
+  - 선택 테이블에서 하위 FK 의존 테이블 재귀 탐색
+  - 관련 테이블만 확대/발광, 나머지 dim
+- [x] **데이터 계보 추적 (Data Lineage)**
+  - FK 역방향으로 원본 마스터 방향 재귀 탐색
+  - 관련 테이블 시각적 포커스
 - [ ] **트랜잭션 범위 가이드**
-  - 특정 업무(예: 주문 처리)에 필요한 테이블 그룹을 자동 탐지하여 박스로 묶어 표시
-- [ ] **N+1 위험 경고**
-  - 1:N → 1:N → 1:N 깊은 중첩 관계 감지 시 경고 배지 표시
+  - 특정 업무 테이블 그룹 자동 탐지/박스 표시
+- [x] **N+1 위험 경고**
+  - 3단계 이상 깊은 1:N 방향 연쇄 후보 탐지
+  - 경로 목록 및 첫 위험 경로 포커스
 
-> **📌 UX 가이드라인**: 위 기능들 실행 시 관련 테이블만 `scale(1.03)` + 테두리 발광으로 살짝 커지며 활성화, 나머지는 `opacity: 0.35`로 dim 처리하여 시각적 포커스 제공
+> **📌 UX 가이드라인**: 분석 기능 실행 시 관련 테이블만 `scale(1.03)` + 테두리 발광, 나머지는 `opacity: 0.35`로 dim 처리.
 
 ---
 
 ## 🛠️ Phase 2 — 중간 난이도
 
-- [ ] **미니맵 (Minimap)**
-  - 우측 하단에 캔버스 축소본, 클릭 시 해당 위치로 이동
-  - (참조: `ERD_STUDIO_V1/components/Minimap.tsx` — 로직 완성 상태)
+- [x] **미니맵 (Minimap)**
+  - 현재 스키마의 테이블 배치를 축소 렌더링
+  - 미니맵 클릭 위치로 캔버스 이동
 - [ ] **SQL DDL 내보내기 (다중 DB)**
   - 현재 Oracle만 지원 → MySQL / PostgreSQL / Oracle 선택 가능하도록
-  - (참조: `ERD_STUDIO_V1/utils/sqlGenerator.ts`)
 - [ ] **스키마 임포트**
   - SQL DDL 파싱해서 ERD로 역변환 (JSON Schema, Prisma 등도 고려)
-  - (참조: `ERD_STUDIO_V1/utils/exportImport.ts`)
-- [ ] **우클릭 컨텍스트 메뉴**
-  - 테이블 우클릭 → 복제 / 삭제 / 인스펙트 / 색상 변경
-  - 캔버스 우클릭 → 새 테이블 추가
-  - (참조: `ERD_STUDIO_V1/components/ContextMenu.tsx`)
+- [ ] **우클릭 컨텍스트 메뉴 고도화**
+  - [x] 테이블: 복제 / 삭제 / 인스펙트 / 편집
+  - [x] 캔버스: 새 테이블 추가
+  - [ ] 테이블 색상 변경
 - [ ] **주석/메모 박스 (NoteBox)**
-  - 캔버스 위에 자유 텍스트 박스 추가 (Mermaid 다이어그램 느낌)
-  - (참조: `ERD_STUDIO_V1/components/NoteBox.tsx`)
+  - 캔버스 위 자유 텍스트 박스
 - [ ] **다중 관계선 라우팅**
-  - A→B에 관계가 여러 개일 때 선이 겹치지 않도록 오프셋 분리
+  - A→B 관계가 여러 개일 때 오프셋 분리
 - [ ] **관계선 호버 툴팁**
-  - 선 위에 마우스 올리면 `Users.id → Posts.user_id (1:N)` 정보 표시
+  - `Users.id → Posts.user_id (1:N)` 정보 표시
 - [ ] **버전 히스토리**
-  - localStorage에 변경 이력 저장, 이전 버전 롤백
-- [ ] **추가 자동 정렬 알고리즘**
-  - 계층형(Tree) / 방사형(Organic) 레이아웃 개선 (코드는 이미 존재, UI만 비활성)
+  - localStorage 장기 변경 이력 / 특정 버전 롤백
+- [x] **추가 자동 정렬 알고리즘 UI 활성화**
+  - 기존 코드에 있던 Tree / Organic 레이아웃 버튼 연결
 - [ ] **다크/라이트 테마 토글**
-  - 현재 다크 4종만 있음 → 라이트 모드 추가
+  - 현재 다크 4종 → 라이트 모드 추가
 
 ---
 
 ## 🚀 Phase 3 — 고급 기능
 
-- [ ] **ERD 검증 (Validation)**
-  - 순환 참조 감지, PK 누락 체크, 네이밍 컨벤션 린트
-  - (참조: `ERD_STUDIO_V1/utils/validation.ts` — 로직 완성 상태)
+- [x] **ERD 검증 (Validation) 1차**
+  - 중복 테이블/컬럼 체크
+  - PK 누락 체크
+  - Oracle식 기본 네이밍 컨벤션 체크
+  - 끊어진 관계 / 존재하지 않는 관계 컬럼 체크
+  - 순환/자기참조 후보 감지
 - [ ] **엔티티 그룹핑 (Subject Area)**
   - "User Domain", "Order Domain" 등으로 묶어서 박스 + 배경색
 - [ ] **실시간 협업**
-  - WebSocket + Yjs로 Figma처럼 동시 편집
+  - WebSocket + Yjs
 - [ ] **DB 연동**
-  - `information_schema` / `pg_catalog`에서 실제 DB 메타데이터 불러오기
+  - 실제 DB 메타데이터 불러오기
 - [ ] **AI 스키마 생성**
-  - "e-commerce ERD 만들어줘" → GPT/Claude API로 초안 생성
+  - 자연어 → ERD 초안 생성
 - [ ] **Diff 뷰**
-  - 두 버전의 ERD 비교, 추가/삭제/변경 시각화
+  - 두 버전 ERD 비교
 
 ---
 
 ## 🏗️ 아키텍처 마이그레이션 (장기)
 
 - [ ] **점진적 React + TypeScript 전환**
-  - `ERD_STUDIO_V1/` 구조 참조하여 컴포넌트 분리
-  - Zustand 상태관리 도입
-  - 현재 `app.js` → 컴포넌트별 분리:
-    - `ERDCanvas.tsx`, `EntityCard.tsx`, `ColumnRow.tsx`
-    - `ConnectionLine.tsx`, `CardinalityBadge.tsx`
-    - `Toolbar.tsx`, `Sidebar.tsx`, `Inspector.tsx`
-    - `Minimap.tsx`, `ContextMenu.tsx`, `ZoomControls.tsx`
-  - hooks 분리: `usePanZoom`, `useConnections`, `useHistory`, `useDrag`, `useKeyboard`
+  - 기존 `app.js` 렌더러는 유지하면서 신규 편집 기능은 `editor.js` 확장 레이어로 우선 분리
+  - 향후 `ERDCanvas.tsx`, `EntityCard.tsx`, `ColumnRow.tsx`, `ConnectionLine.tsx`, `Toolbar.tsx`, `Inspector.tsx`, `Minimap.tsx`, `ContextMenu.tsx` 순으로 이전
+  - Zustand 상태관리 도입은 React 편집 모델 전환 시점에 진행
 
 ---
 
@@ -150,16 +149,23 @@
 > 현재 SVG DOM 직접 조작 방식은 30~50개까지 쾌적. 300개 이상 시 아래 단계적 최적화 적용.
 
 - [ ] **Step 1: 뷰포트 컬링 (Virtual Viewport)** — 최우선
-  - 화면에 보이는 테이블과 선만 렌더링, 밖에 있는 요소는 DOM에서 제거
-  - 팬/줌 시 동적으로 가시 영역 재계산하여 붙였다 뗐다
-  - 이것만으로도 300~1000개 테이블도 체감 성능 30개 수준 유지
-- [ ] **Step 2: 연결선 Canvas 2D 전환** — 선이 병목일 때
-  - 테이블 카드는 DOM 유지 (텍스트/인터랙션), 연결선만 Canvas로 전환
-  - DOM 노드 없이 픽셀 드로잉이라 선 500개도 거뜬
-- [ ] **Step 3: WebGL (PixiJS)** — 극한 성능
-  - GPU 가속 렌더링, 1000개 이상 노드도 60fps 유지
-  - 텍스트 렌더링 및 CSS 테마 연동 공수 필요
+  - 화면에 보이는 테이블과 선만 렌더링
+- [ ] **Step 2: 연결선 Canvas 2D 전환**
+  - 테이블 카드는 DOM 유지, 연결선만 Canvas
+- [ ] **Step 3: WebGL (PixiJS)**
+  - 1000개 이상 노드 대응
 - [ ] **SVG 즉시 적용 가능한 최적화**
-  - 여러 path를 하나의 `<path d="...">`로 배칭 (DOM 노드 수 감소)
-  - `will-change: transform` GPU 합성 힌트
-  - `content-visibility: auto`로 화면 밖 요소 렌더 스킵
+  - path 배칭
+  - `will-change: transform`
+  - `content-visibility: auto`
+
+---
+
+## ▶ 다음 우선순위
+
+1. **관계 편집 UI** — 새 테이블 추가 후 FK 관계를 마우스로 직접 연결/수정/삭제
+2. **DDL Import** — Oracle CREATE TABLE / FK DDL을 붙여넣으면 ERD 자동 생성
+3. **다중 DB DDL Export** — Oracle / PostgreSQL / MySQL
+4. **사용자 SQL 템플릿 편집/삭제**
+5. **버전 히스토리 + Diff**
+6. **300+ 테이블용 뷰포트 컬링**

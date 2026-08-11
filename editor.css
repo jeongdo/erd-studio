@@ -1,0 +1,59 @@
+/* ERD Studio editor extension */
+.editor-toolbar-group { display:flex; align-items:center; gap:6px; }
+.btn-icon:disabled { opacity:.35; cursor:not-allowed; }
+.btn-editor-primary { width:auto; padding:0 11px; gap:7px; font-size:.78rem; font-weight:700; }
+.selection-status { font-size:.72rem; color:var(--text-muted); white-space:nowrap; }
+.editor-tools-menu { position:relative; }
+.editor-tools-menu > summary { list-style:none; width:auto; min-width:36px; padding:0 10px; gap:7px; }
+.editor-tools-menu > summary::-webkit-details-marker { display:none; }
+.editor-tools-popover { position:absolute; right:0; top:44px; width:250px; padding:8px; border:1px solid var(--panel-border); border-radius:10px; background:rgba(9,13,22,.98); box-shadow:0 18px 45px rgba(0,0,0,.45); z-index:260; display:grid; gap:5px; }
+.editor-tools-popover .menu-label { padding:6px 8px 2px; color:var(--text-muted); font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; }
+.editor-tools-popover button { width:100%; border:0; border-radius:7px; background:transparent; color:var(--text-main); text-align:left; padding:8px 10px; cursor:pointer; font-size:.78rem; }
+.editor-tools-popover button:hover { background:rgba(56,189,248,.12); color:var(--accent-blue); }
+.template-list { display:grid; gap:3px; }
+.context-separator { height:1px; background:var(--panel-border); margin:4px 0; }
+
+.editor-context-menu { position:fixed; display:none; min-width:210px; padding:7px; border:1px solid var(--panel-border); border-radius:10px; background:rgba(9,13,22,.98); box-shadow:0 18px 50px rgba(0,0,0,.5); z-index:500; }
+.editor-context-menu.open { display:grid; gap:2px; }
+.editor-context-menu button { border:0; border-radius:6px; background:transparent; color:var(--text-main); padding:8px 10px; text-align:left; cursor:pointer; font-size:.78rem; }
+.editor-context-menu button:hover:not(:disabled) { background:rgba(56,189,248,.13); color:var(--accent-blue); }
+.editor-context-menu button:disabled { opacity:.35; cursor:not-allowed; }
+.editor-context-menu button.danger:hover { color:#f87171; background:rgba(248,113,113,.12); }
+
+.editor-dialog { width:min(620px, calc(100vw - 32px)); border:1px solid var(--panel-border); border-radius:14px; background:var(--bg-dark); color:var(--text-main); padding:0; box-shadow:0 28px 80px rgba(0,0,0,.65); }
+.editor-dialog::backdrop { background:rgba(2,6,23,.7); backdrop-filter:blur(3px); }
+.editor-dialog form { display:grid; }
+.editor-dialog-header { display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid var(--panel-border); }
+.editor-dialog-header h3 { font-size:1rem; }
+.editor-dialog-body { display:grid; gap:14px; padding:18px; }
+.editor-field { display:grid; gap:6px; }
+.editor-field label { color:var(--text-muted); font-size:.75rem; font-weight:700; }
+.editor-field input,.editor-field textarea { width:100%; border:1px solid var(--panel-border); border-radius:8px; background:rgba(15,23,42,.72); color:var(--text-main); padding:10px 11px; outline:none; font:500 .82rem 'Fira Code', monospace; user-select:text; }
+.editor-field input:focus,.editor-field textarea:focus { border-color:var(--accent-blue); box-shadow:0 0 0 2px rgba(56,189,248,.1); }
+.editor-field textarea { min-height:220px; resize:vertical; line-height:1.55; }
+.editor-field small { color:var(--text-muted); font-size:.69rem; }
+.editor-dialog-actions { display:flex; justify-content:flex-end; gap:8px; padding:14px 18px; border-top:1px solid var(--panel-border); }
+.editor-btn { border:1px solid var(--panel-border); border-radius:7px; background:rgba(30,41,59,.7); color:var(--text-main); padding:8px 13px; cursor:pointer; font-size:.78rem; font-weight:700; }
+.editor-btn:hover { border-color:var(--accent-blue); color:var(--accent-blue); }
+.editor-btn.primary { background:var(--accent-blue); color:#07111c; border-color:var(--accent-blue); }
+
+.editor-output { position:fixed; left:50%; bottom:24px; transform:translate(-50%, calc(100% + 60px)); width:min(820px, calc(100vw - 48px)); max-height:52vh; display:grid; grid-template-rows:auto 1fr; border:1px solid var(--panel-border); border-radius:12px; background:rgba(9,13,22,.97); box-shadow:0 24px 70px rgba(0,0,0,.55); z-index:450; opacity:0; pointer-events:none; transition:.22s ease; }
+.editor-output.open { transform:translate(-50%, 0); opacity:1; pointer-events:auto; }
+.editor-output-header { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid var(--panel-border); }
+.editor-output-title { font-size:.8rem; font-weight:800; color:var(--accent-blue); }
+.editor-output-actions { display:flex; gap:6px; }
+.editor-output pre { margin:0; padding:16px; overflow:auto; color:#dbeafe; font:500 .78rem/1.65 'Fira Code', monospace; white-space:pre; user-select:text; }
+
+.editor-minimap-shell { position:absolute; right:18px; bottom:78px; width:196px; height:136px; padding:8px; border:1px solid var(--panel-border); border-radius:10px; background:rgba(9,13,22,.78); backdrop-filter:blur(8px); z-index:70; pointer-events:auto; }
+.editor-minimap-title { position:absolute; left:8px; top:6px; color:var(--text-muted); font-size:.58rem; letter-spacing:.08em; }
+.editor-minimap { position:relative; cursor:crosshair; width:180px; height:120px; margin-top:8px; overflow:hidden; }
+.editor-minimap span { position:absolute; border:1px solid var(--accent-blue); background:rgba(56,189,248,.18); border-radius:2px; }
+
+.table-card.analysis-focus { transform:scale(1.03); border-color:var(--accent-amber)!important; box-shadow:0 0 0 2px var(--accent-amber),0 18px 42px rgba(251,191,36,.18)!important; }
+.table-card.analysis-dimmed { opacity:.35; }
+
+@media (max-width: 1280px) {
+  .selection-status { display:none; }
+  .btn-editor-primary span { display:none; }
+  .btn-editor-primary { width:36px; padding:0; justify-content:center; }
+}

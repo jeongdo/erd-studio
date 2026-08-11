@@ -4,61 +4,89 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interactive ERD Studio</title>
-    <!-- Google Fonts & FontAwesome Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Multi-Theme CSS Palette Load -->
     <link rel="stylesheet" href="theme.css">
-    
-    <!-- Vite / React Entry Point (Imports Tailwind CSS) -->
+    <link rel="stylesheet" href="editor.css">
     <script type="module" src="/src/main.jsx"></script>
 </head>
 <body class="theme-cyber-navy">
-
-    <!-- Header Navigation -->
     <header>
         <div class="brand">
             <i class="fa-solid fa-diagram-project" style="color: var(--accent-blue);"></i>
             <span>ERD Studio</span>
-            <span class="brand-badge">PRO v0.0.3</span>
+            <span class="brand-badge">PRO v0.1.0</span>
         </div>
 
-        <!-- Dynamic Auto-Generated Tabs Container -->
         <div class="tabs-container" id="tabs-container"></div>
 
         <div class="toolbar">
-            <!-- Multi-Theme Dropdown Selector -->
             <select id="theme-select" class="theme-dropdown" onchange="changeTheme(this.value)">
-                <option value="theme-cyber-navy">🌐 사이버 네이비 (Cyber Navy)</option>
-                <option value="theme-industrial-slate">⚙️ 산업 슬레이트 (Industrial Slate)</option>
-                <option value="theme-charcoal-gray">🐘 차콜 그레이 (Charcoal Gray)</option>
-                <option value="theme-midnight-gold">👑 미드나잇 골드 (Midnight Gold)</option>
+                <option value="theme-cyber-navy">🌐 사이버 네이비</option>
+                <option value="theme-industrial-slate">⚙️ 산업 슬레이트</option>
+                <option value="theme-charcoal-gray">🐘 차콜 그레이</option>
+                <option value="theme-midnight-gold">👑 미드나잇 골드</option>
             </select>
 
             <div class="search-box">
                 <i class="fa-solid fa-search"></i>
                 <input type="text" id="search-input" placeholder="테이블/컬럼 실시간 검색..." onkeyup="handleSearch()">
             </div>
-            
-            <div style="width: 1px; height: 24px; background: var(--panel-border); margin: 0 4px;"></div>
-            
-            <button class="btn-icon" onclick="applyLayout('grid')" title="자동 정렬 (격자형)"><i class="fa-solid fa-table-cells-large"></i></button>
-            
-            <div style="width: 1px; height: 24px; background: var(--panel-border); margin: 0 4px;"></div>
+
+            <div class="editor-toolbar-group">
+                <button class="btn-icon btn-editor-primary" onclick="openTableDialog()" title="새 테이블 추가">
+                    <i class="fa-solid fa-plus"></i><span>테이블</span>
+                </button>
+                <button class="btn-icon" id="editor-undo" onclick="undoEditor()" title="실행 취소 (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
+                <button class="btn-icon" id="editor-redo" onclick="redoEditor()" title="다시 실행 (Ctrl+Shift+Z)"><i class="fa-solid fa-rotate-right"></i></button>
+                <span class="selection-status" id="selection-status">선택 없음</span>
+            </div>
+
+            <div style="width:1px;height:24px;background:var(--panel-border);"></div>
+            <button class="btn-icon" onclick="applyLayout('grid')" title="격자형 자동 정렬"><i class="fa-solid fa-table-cells-large"></i></button>
+            <button class="btn-icon" onclick="applyLayout('tree')" title="계층형 자동 정렬"><i class="fa-solid fa-code-branch"></i></button>
+            <button class="btn-icon" onclick="applyLayout('organic')" title="Organic 자동 정렬"><i class="fa-solid fa-share-nodes"></i></button>
+
+            <details class="editor-tools-menu">
+                <summary class="btn-icon" title="개발 도구"><i class="fa-solid fa-screwdriver-wrench"></i></summary>
+                <div class="editor-tools-popover">
+                    <div class="menu-label">선택 테이블</div>
+                    <button onclick="generateCode('java')">Java DTO 생성</button>
+                    <button onclick="generateCode('kotlin')">Kotlin DTO 생성</button>
+                    <button onclick="generateCode('typescript')">TypeScript DTO 생성</button>
+                    <button onclick="analyzeRelations('impact')">영향도 분석</button>
+                    <button onclick="analyzeRelations('lineage')">데이터 계보 추적</button>
+                    <div class="menu-label">관계 / 순서</div>
+                    <button onclick="generateJoinForSelected()">선택 2개 JOIN SQL</button>
+                    <button onclick="generateJoinPath()">Join Path Finder</button>
+                    <button onclick="showDependencyOrder()">INSERT / DELETE 순서</button>
+                    <button onclick="detectNPlusOneRisk()">N+1 위험 스캔</button>
+                    <button onclick="validateSchema()">ERD 검증</button>
+                    <div class="menu-label">SQL 템플릿</div>
+                    <div id="template-list" class="template-list"></div>
+                    <button onclick="addCustomTemplate()"><i class="fa-solid fa-plus"></i> 사용자 템플릿 추가</button>
+                    <div class="menu-label">내보내기</div>
+                    <button onclick="exportDiagram('png')">PNG 내보내기</button>
+                    <button onclick="exportDiagram('svg')">SVG 내보내기</button>
+                    <button onclick="exportSpecification('md')">테이블 명세 Markdown</button>
+                    <button onclick="exportSpecification('csv')">테이블 명세 CSV</button>
+                    <button onclick="exportSpecification('xls')">테이블 명세 Excel</button>
+                    <div class="context-separator"></div>
+                    <button onclick="resetSavedSchema()">저장 상태 초기화</button>
+                </div>
+            </details>
+
             <button class="btn-icon" onclick="resetZoom()" title="화면 맞춤"><i class="fa-solid fa-compress"></i></button>
-            <button class="btn-icon" onclick="toggleInspector()" title="인스펙터 열기/닫기"><i class="fa-solid fa-sidebar"></i></button>
+            <button class="btn-icon" onclick="toggleInspector()" title="인스펙터"><i class="fa-solid fa-sidebar"></i></button>
         </div>
     </header>
 
-    <!-- Main Workspace Area -->
     <div class="workspace" id="workspace">
         <div id="canvas-layer">
             <svg id="connections-svg">
                 <defs>
-                    <!-- Dynamic Theme Arrow Marker for Line Target -->
                     <marker id="marker-arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="10" markerHeight="10" orient="auto-start-reverse">
                         <path id="arrow-path" d="M 2,2 L 10,6 L 2,10 Z" fill="var(--accent-blue)" stroke="var(--accent-blue)" stroke-width="1.5" stroke-linejoin="round" />
                     </marker>
@@ -67,7 +95,6 @@
             <div id="cards-container"></div>
         </div>
 
-        <!-- Zoom Floating Bar -->
         <div class="zoom-controls">
             <button class="btn-icon" onclick="zoomCanvas(0.9)"><i class="fa-solid fa-minus"></i></button>
             <span class="zoom-percentage" id="zoom-text">100%</span>
@@ -75,24 +102,19 @@
             <button class="btn-icon" onclick="resetZoom()"><i class="fa-solid fa-rotate-left"></i></button>
         </div>
 
-        <!-- Legend Bar -->
         <div class="legend-bar">
-            <div class="legend-item">
-                <div class="legend-line"></div>
-                <span>식별 관계 (Solid Line)</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-line dashed"></div>
-                <span>비식별 관계 (Dashed Line)</span>
-            </div>
-            <div class="legend-item">
-                <span style="color: var(--accent-blue); font-weight: 700;">1 : N</span>
-                <span>수량 수식 배지 (Cardinality)</span>
-            </div>
+            <div class="legend-item"><div class="legend-line"></div><span>식별 관계 (Solid Line)</span></div>
+            <div class="legend-item"><div class="legend-line dashed"></div><span>비식별 관계 (Dashed Line)</span></div>
+            <div class="legend-item"><span style="color:var(--accent-blue);font-weight:700;">1 : N</span><span>수량 수식 배지</span></div>
+            <div class="legend-item"><span style="color:var(--accent-amber);font-weight:700;">Ctrl+Click</span><span>다중 선택</span></div>
+        </div>
+
+        <div class="editor-minimap-shell">
+            <div class="editor-minimap-title">MINIMAP</div>
+            <div class="editor-minimap" id="editor-minimap"></div>
         </div>
     </div>
 
-    <!-- Inspector Drawer -->
     <div class="inspector-drawer" id="inspector">
         <div class="drawer-header">
             <div>
@@ -103,14 +125,14 @@
         </div>
         <div class="drawer-content">
             <div>
-                <h4 style="font-size: 0.85rem; margin-bottom: 8px; color: var(--text-muted);">오라클 DDL 정의</h4>
+                <h4 style="font-size:.85rem;margin-bottom:8px;color:var(--text-muted);">오라클 DDL 정의</h4>
                 <div class="sql-box-container">
                     <button class="copy-btn" onclick="copyCode('ddl-text')"><i class="fa-regular fa-copy"></i> 복사</button>
                     <pre class="sql-code-block" id="ddl-text"></pre>
                 </div>
             </div>
             <div>
-                <h4 style="font-size: 0.85rem; margin-bottom: 8px; color: var(--accent-amber);">테스트용 Mock INSERT 쿼리 (1초 실행)</h4>
+                <h4 style="font-size:.85rem;margin-bottom:8px;color:var(--accent-amber);">테스트용 Mock INSERT</h4>
                 <div class="sql-box-container">
                     <button class="copy-btn" onclick="copyCode('mock-text')"><i class="fa-regular fa-copy"></i> 복사</button>
                     <pre class="sql-code-block" id="mock-text"></pre>
@@ -119,9 +141,52 @@
         </div>
     </div>
 
-    <!-- Central Schema Data JS Load -->
-    <script src="schema_data.js"></script>
+    <dialog class="editor-dialog" id="table-editor-dialog">
+        <form id="table-editor-form">
+            <div class="editor-dialog-header">
+                <h3 id="table-editor-title">새 테이블 추가</h3>
+                <button type="button" class="btn-icon" onclick="this.closest('dialog').close()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="editor-dialog-body">
+                <div class="editor-field">
+                    <label for="table-name-input">테이블명</label>
+                    <input id="table-name-input" autocomplete="off" placeholder="ORDERS" required>
+                </div>
+                <div class="editor-field">
+                    <label for="table-desc-input">설명</label>
+                    <input id="table-desc-input" autocomplete="off" placeholder="주문 마스터 테이블">
+                </div>
+                <div class="editor-field">
+                    <label for="table-columns-input">컬럼</label>
+                    <textarea id="table-columns-input" spellcheck="false" required></textarea>
+                    <small>한 줄에 하나: <b>컬럼명 타입 [PK] [FK]</b> · 예: ORDER_ID NUMBER PK</small>
+                </div>
+            </div>
+            <div class="editor-dialog-actions">
+                <button type="button" class="editor-btn" onclick="this.closest('dialog').close()">취소</button>
+                <button type="submit" class="editor-btn primary">저장</button>
+            </div>
+        </form>
+    </dialog>
 
+    <div class="editor-context-menu" id="editor-context-menu"></div>
+
+    <section class="editor-output" id="editor-output">
+        <div class="editor-output-header">
+            <div class="editor-output-title" id="editor-output-title">Developer Output</div>
+            <div class="editor-output-actions">
+                <button class="editor-btn" onclick="copyEditorOutput()"><i class="fa-regular fa-copy"></i> 복사</button>
+                <button class="editor-btn" onclick="closeOutput()">닫기</button>
+            </div>
+        </div>
+        <pre id="editor-output-code"></pre>
+    </section>
+
+    <script src="schema_data.js"></script>
     <script src="app.js"></script>
+    <script src="editor-core.js"></script>
+    <script src="editor-sql.js"></script>
+    <script src="editor-analysis.js"></script>
+    <script src="editor-ui.js"></script>
 </body>
 </html>
