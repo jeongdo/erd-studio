@@ -30,6 +30,8 @@
   }
 
   function scopedTables(view) {
+    const projected = E.ViewProjection?.tables?.(view, currentView);
+    if (Array.isArray(projected)) return projected;
     const area = E.Project?.activeArea?.(currentView);
     if (!area) return view?.tables || [];
     const allowed = new Set(area.tableIds || []);
@@ -120,15 +122,15 @@
   function syncVirtualCards() {
     const view = A.view();
     if (!view) return false;
-    if (view.tables.length < THRESHOLD) {
+    ensureTableLayout(view);
+    const candidates = scopedTables(view);
+    if (candidates.length < THRESHOLD) {
       virtualViewKey = null;
       virtualIds = new Set();
-      updateCullingStatus(view.tables.length, view.tables.length);
+      updateCullingStatus(candidates.length, candidates.length);
       return false;
     }
 
-    ensureTableLayout(view);
-    const candidates = scopedTables(view);
     const targetTables = visibleTables(view);
     const targetIds = new Set(targetTables.map(E.tableId));
     let changed = virtualViewKey !== currentView;
@@ -372,22 +374,33 @@
   const baseRender = window.renderView;
   window.renderView = function(viewKey) {
     const view = schemaData[viewKey];
-    if (!view || (view.tables?.length || 0) < THRESHOLD) {
-      virtualViewKey = null;
-      virtualIds = new Set();
+    if (!view) {
       baseRender(viewKey);
-      requestAnimationFrame(() => {
-        A.renderCanvasExtras?.();
-        A.decorateRelations?.();
-        renderMinimap();
-        updateCullingStatus(view?.tables?.length || 0, view?.tables?.length || 0);
-      });
       return;
     }
 
     ensureTableLayout(view);
-    currentView = viewKey;
     const candidates = scopedTables(view);
+    if (candidates.length < THRESHOLD) {
+      virtualViewKey = null;
+      virtualIds = new Set();
+      const fullTables = view.tables;
+      view.tables = candidates;
+      try {
+        baseRender(viewKey);
+      } finally {
+        view.tables = fullTables;
+      }
+      requestAnimationFrame(() => {
+        A.renderCanvasExtras?.();
+        A.decorateRelations?.();
+        renderMinimap();
+        updateCullingStatus(candidates.length, candidates.length);
+      });
+      return;
+    }
+
+    currentView = viewKey;
     const camera = cameraForTables(candidates.length ? candidates : view.tables);
     const targetTables = visibleTables(view, camera);
     const fullTables = view.tables;
@@ -423,13 +436,15 @@
   const baseTransform = window.applyTransform;
   window.applyTransform = function() {
     baseTransform();
-    if ((A.view()?.tables?.length || 0) >= THRESHOLD) scheduleCull();
+    const view = A.view();
+    if (view && scopedTables(view).length >= THRESHOLD) scheduleCull();
     updateMinimapViewport();
   };
 
   const baseSearch = window.handleSearch;
   window.handleSearch = function() {
-    if ((A.view()?.tables?.length || 0) < THRESHOLD) return baseSearch();
+    const view = A.view();
+    if (!view || scopedTables(view).length < THRESHOLD) return baseSearch();
     const query = document.getElementById('search-input').value.toLowerCase().trim();
     cardsContainer.querySelectorAll('.table-card').forEach(card => {
       const table = E.findTable(card.id.replace(/^card-/, ''));
