@@ -136,6 +136,51 @@
     }, { ...options, reason: 'sample' });
   }
 
+  function validateProjectFile(payload) {
+    if (!payload || typeof payload !== 'object') throw new Error('프로젝트 JSON 형식이 아닙니다.');
+    if (payload.format !== P.format) throw new Error(`지원하지 않는 프로젝트 형식입니다: ${payload.format || 'unknown'}`);
+    if (!payload.schemas || typeof payload.schemas !== 'object' || Array.isArray(payload.schemas)) {
+      throw new Error('schemas 데이터가 없습니다.');
+    }
+    const entries = Object.entries(payload.schemas);
+    if (!entries.length) throw new Error('프로젝트에 스키마가 없습니다.');
+    entries.forEach(([key, view]) => {
+      if (!view || !Array.isArray(view.tables) || !Array.isArray(view.relations || [])) {
+        throw new Error(`${key} 스키마 형식이 올바르지 않습니다.`);
+      }
+    });
+  }
+
+  function applyProjectFilePayload(payload, options = {}) {
+    validateProjectFile(payload);
+    return replaceWorkspace({
+      project: payload.project || {},
+      schemas: payload.schemas,
+      areas: payload.areas || [],
+      activeAreaBySchema: payload.activeAreaBySchema || {},
+      sources: payload.sources || blankSources()
+    }, { ...options, reason: 'open-file' });
+  }
+
+  function openProjectFile() {
+    if (!confirmReplace('현재 프로젝트를 닫고 다른 프로젝트 파일을 열까요?\n필요하면 먼저 현재 프로젝트를 저장하세요.')) return;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,.erdproject';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      try {
+        const payload = JSON.parse(await file.text());
+        applyProjectFilePayload(payload);
+      } catch (err) {
+        console.error(err);
+        alert(`프로젝트 파일을 열 수 없습니다.\n${err.message}`);
+      }
+    };
+    input.click();
+  }
+
   function shouldConfirmReplace() {
     return currentHasContent() && !P.state.project?.sample;
   }
@@ -169,8 +214,14 @@
     normalizeSchemaName,
     schemaKeyFor,
     emptySchema,
-    hasContent: currentHasContent
+    hasContent: currentHasContent,
+    openProjectFile,
+    applyProjectFilePayload,
+    validateProjectFile
   };
+
+  P.importFile = openProjectFile;
+  window.importProjectFile = openProjectFile;
 
   migrateLegacyBootstrap();
 })();
