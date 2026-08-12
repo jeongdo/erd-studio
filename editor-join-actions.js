@@ -14,7 +14,9 @@
   });
 
   // Keep the hidden legacy wrench menu semantically consistent as a fallback.
-  document.querySelectorAll('.editor-tools-popover button[onclick*="generateJoinForSelected"]').forEach(button => {
-    button.textContent = '선택 테이블 JOIN SQL';
-  });
+  if (typeof document !== 'undefined') {
+    document.querySelectorAll('.editor-tools-popover button[onclick*="generateJoinForSelected"]').forEach(button => {
+      button.textContent = '선택 테이블 JOIN SQL';
+    });
+  }
 })();
