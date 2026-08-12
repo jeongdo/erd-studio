@@ -1,0 +1,9 @@
+/* Relation routing polish: clearer endpoints without changing ERD semantics. */
+#connections-svg .connection-line {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#marker-arrow #arrow-path {
+  filter: none;
+}
