@@ -58,11 +58,13 @@ function loadProjectLayer() {
                             loadClassic('/editor-join-actions.js', 'join-actions', () => {
                               loadClassic('/editor-relation-routing-ux.js', 'relation-routing-ux', () => {
                                 loadClassic('/editor-relation-identity.js', 'relation-identity', () => {
-                                  loadClassic('/editor-desktop-shell.js', 'desktop-shell', () => {
-                                    loadClassic('/editor-welcome.js', 'welcome', () => {
-                                      loadClassic('/editor-responsive-ux.js', 'responsive-ux', () => {
-                                        loadClassic('/editor-mybatis.js', 'mybatis', () => {
-                                          loadClassic('/editor-ai-context.js', 'ai-context')
+                                  loadClassic('/editor-table-visibility.js', 'table-visibility', () => {
+                                    loadClassic('/editor-desktop-shell.js', 'desktop-shell', () => {
+                                      loadClassic('/editor-welcome.js', 'welcome', () => {
+                                        loadClassic('/editor-responsive-ux.js', 'responsive-ux', () => {
+                                          loadClassic('/editor-mybatis.js', 'mybatis', () => {
+                                            loadClassic('/editor-ai-context.js', 'ai-context')
+                                          })
                                         })
                                       })
                                     })
