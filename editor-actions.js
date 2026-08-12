@@ -137,6 +137,18 @@
 
   restoreChromePrefs();
 
+  document.addEventListener('keydown', event => {
+    const mod = event.ctrlKey || event.metaKey;
+    if (!mod || event.altKey) return;
+    if (document.querySelector('dialog[open]')) return;
+    const key = event.key.toLowerCase();
+    const shortcuts = { n:'file.new', o:'file.open', s:'file.save' };
+    const actionId = shortcuts[key];
+    if (!actionId) return;
+    event.preventDefault();
+    invoke(actionId);
+  });
+
   E.Actions = {
     register,
     get,

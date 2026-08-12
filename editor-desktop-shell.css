@@ -124,6 +124,15 @@ body.erd-desktop-shell .inspector-drawer { top:88px !important; }
 body.erd-hide-minimap .editor-minimap-shell { display:none !important; }
 body.erd-hide-legend .legend-bar { display:none !important; }
 
+/* Legacy modules may still append convenience buttons; the dock itself is navigation-only. */
+body.erd-desktop-shell .erd-project-dock-rail [data-project-new],
+body.erd-desktop-shell .erd-project-dock-rail [data-project-samples],
+body.erd-desktop-shell .erd-project-dock-rail [data-project-open],
+body.erd-desktop-shell .erd-project-dock-rail [data-project-save],
+body.erd-desktop-shell .erd-project-dock-rail [data-project-settings-explicit],
+body.erd-desktop-shell .erd-project-dock-rail [data-mybatis-import],
+body.erd-desktop-shell .erd-project-dock-rail [data-ai-context-export] { display:none !important; }
+
 .desktop-shortcut-list { display:grid; gap:0; }
 .desktop-shortcut-list > div {
   display:grid;

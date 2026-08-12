@@ -127,11 +127,19 @@
     }
   });
 
-  const baseOnload = window.onload;
-  window.onload = function(event) {
-    baseOnload?.call(window, event);
+  function scheduleInitialWelcome() {
     requestAnimationFrame(() => requestAnimationFrame(() => showWelcome()));
-  };
+  }
+
+  if (document.readyState === 'complete') {
+    scheduleInitialWelcome();
+  } else {
+    const baseOnload = window.onload;
+    window.onload = function(event) {
+      baseOnload?.call(window, event);
+      scheduleInitialWelcome();
+    };
+  }
 
   E.Welcome = { show: () => showWelcome({ force:true }), close: removeWelcome, isBlankWorkspace };
 })();
