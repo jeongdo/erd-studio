@@ -1,4 +1,4 @@
-/** Expand canonical JOIN action from exactly two tables to any connected selection. */
+/** Canonical JOIN action: any connected selection of two or more tables. */
 (() => {
   'use strict';
   const E = window.ERDEditor;
@@ -11,5 +11,10 @@
     icon: 'fa-solid fa-code',
     when: () => (E.selectedIds?.size || 0) >= 2,
     run: () => window.generateJoinForSelected?.()
+  });
+
+  // Keep the hidden legacy wrench menu semantically consistent as a fallback.
+  document.querySelectorAll('.editor-tools-popover button[onclick*="generateJoinForSelected"]').forEach(button => {
+    button.textContent = '선택 테이블 JOIN SQL';
   });
 })();
