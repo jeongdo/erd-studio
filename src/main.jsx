@@ -1,16 +1,26 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import './index.css'
+import '../editor-project.css'
 
-// Legacy ERD modules are still classic scripts. Load the project layer after the
-// parser has executed those scripts, while keeping Vite/React available for
-// incremental UI migration.
-function loadProjectLayer() {
-  if (document.querySelector('script[data-erd-project-layer]')) return
+// Legacy ERD modules are still classic scripts. Load project extensions in
+// dependency order after the parser has executed the legacy editor scripts.
+function loadClassic(src, marker, onload) {
+  if (document.querySelector(`script[data-erd-layer="${marker}"]`)) {
+    onload?.()
+    return
+  }
   const script = document.createElement('script')
-  script.src = '/editor-project.js'
-  script.dataset.erdProjectLayer = 'true'
+  script.src = src
+  script.dataset.erdLayer = marker
+  script.onload = () => onload?.()
   document.body.appendChild(script)
+}
+
+function loadProjectLayer() {
+  loadClassic('/editor-project.js', 'project', () => {
+    loadClassic('/editor-project-dock.js', 'project-dock')
+  })
 }
 
 if (document.readyState === 'loading') {

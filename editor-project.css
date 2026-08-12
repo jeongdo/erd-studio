@@ -1,0 +1,134 @@
+/* Project / schema / Subject Area bottom sliding dock */
+.tabs-container { display:none !important; }
+
+.erd-project-dock {
+  --dock-height: 228px;
+  position:fixed;
+  left:18px;
+  right:18px;
+  bottom:12px;
+  height:46px;
+  border:1px solid var(--panel-border);
+  border-radius:13px;
+  background:rgba(9,13,22,.94);
+  backdrop-filter:blur(16px);
+  box-shadow:0 18px 55px rgba(0,0,0,.42);
+  z-index:120;
+  overflow:hidden;
+  transition:height .28s cubic-bezier(.16,1,.3,1), background .25s ease;
+}
+.erd-project-dock.open { height:var(--dock-height); }
+.erd-project-dock-rail {
+  height:45px;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:0 8px 0 10px;
+  border-bottom:1px solid transparent;
+}
+.erd-project-dock.open .erd-project-dock-rail { border-bottom-color:var(--panel-border); }
+.dock-project-main,.dock-current-schema,.dock-current-area,.dock-icon-btn,.dock-text-btn,.dock-chip {
+  border:0;
+  color:var(--text-main);
+  background:transparent;
+  cursor:pointer;
+}
+.dock-project-main {
+  display:flex;align-items:center;gap:8px;min-width:0;
+  font-weight:800;font-size:.78rem;padding:6px 8px;border-radius:7px;
+}
+.dock-project-main i { color:var(--accent-blue); }
+.dock-project-main:hover,.dock-current-schema:hover,.dock-current-area:hover,.dock-icon-btn:hover,.dock-text-btn:hover { background:rgba(56,189,248,.1);color:var(--accent-blue); }
+.dock-project-name { max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.dock-current-schema,.dock-current-area {
+  max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  padding:6px 8px;border-radius:7px;font-size:.74rem;font-weight:700;
+}
+.dock-current-area { color:var(--accent-blue); }
+.dock-path-separator { color:var(--text-muted);font-size:.6rem;opacity:.55; }
+.dock-flex { flex:1; }
+.dock-count { color:var(--text-muted);font:600 .68rem 'Fira Code',monospace;white-space:nowrap; }
+.dock-icon-btn {
+  width:30px;height:30px;border-radius:7px;display:grid;place-items:center;font-size:.78rem;
+}
+.dock-toggle { color:var(--accent-blue); }
+.erd-project-dock-panel {
+  height:calc(var(--dock-height) - 46px);
+  display:grid;
+  grid-template-columns:minmax(260px,.72fr) minmax(420px,1.28fr);
+  grid-template-rows:1fr auto;
+  gap:10px 14px;
+  padding:12px 14px 10px;
+}
+.dock-section { min-width:0;display:flex;flex-direction:column;gap:8px; }
+.dock-section-head { display:flex;align-items:center;justify-content:space-between;min-height:27px;gap:10px; }
+.dock-section-head > div:first-child { display:flex;align-items:baseline;gap:8px; }
+.dock-section-head strong { font-size:.78rem; }
+.dock-kicker { color:var(--accent-blue);font:700 .58rem 'Fira Code',monospace;letter-spacing:.08em; }
+.dock-help { color:var(--text-muted);font-size:.62rem;white-space:nowrap; }
+.dock-section-actions { display:flex;align-items:center;gap:5px; }
+.dock-text-btn { padding:5px 7px;border-radius:6px;color:var(--text-muted);font-size:.66rem;white-space:nowrap; }
+.dock-text-btn i { margin-right:4px; }
+.dock-chip-scroll {
+  display:flex;align-items:flex-start;gap:7px;overflow-x:auto;overflow-y:hidden;
+  padding:2px 2px 7px;scrollbar-width:thin;scrollbar-color:var(--panel-border) transparent;
+}
+.dock-chip {
+  flex:0 0 auto;display:flex;align-items:center;gap:7px;
+  min-height:36px;max-width:220px;padding:7px 10px;border:1px solid var(--panel-border);
+  border-radius:9px;background:rgba(30,41,59,.42);font-size:.72rem;font-weight:700;
+  transition:.18s ease;
+}
+.dock-chip span { overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.dock-chip em {
+  font:600 .62rem 'Fira Code',monospace;color:var(--text-muted);font-style:normal;
+  padding:2px 5px;border-radius:10px;background:rgba(255,255,255,.05);
+}
+.dock-chip:hover { border-color:var(--accent-blue);transform:translateY(-1px); }
+.dock-chip.active { color:#07111c;background:var(--accent-blue);border-color:var(--accent-blue);box-shadow:0 0 18px var(--line-glow); }
+.dock-chip.active em { color:inherit;background:rgba(7,17,28,.12); }
+.area-chip:not(.active) { border-left:3px solid var(--area-color,var(--panel-border)); }
+.dock-area-dot,.area-manager-dot { width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:var(--area-color,#8b5cf6);box-shadow:0 0 8px var(--area-color,#8b5cf6); }
+.dock-scope-summary {
+  grid-column:1 / -1;display:flex;align-items:center;justify-content:space-between;gap:16px;
+  min-height:31px;border-top:1px solid var(--panel-border);padding-top:8px;
+  color:var(--text-muted);font-size:.68rem;
+}
+.dock-scope-summary b { color:var(--text-main); }
+.dock-scope-summary i { color:var(--accent-blue);margin-right:5px; }
+.table-card.scope-hidden { display:none !important; }
+
+.area-manager-toolbar { display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--text-muted);font-size:.74rem; }
+.area-manager-dot { display:inline-block;margin-right:7px;vertical-align:1px; }
+.manager-actions { display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end; }
+.editor-btn.danger { color:#f87171; }
+.editor-btn.danger:hover { border-color:#f87171;color:#f87171; }
+.advanced-empty { padding:22px;text-align:center;color:var(--text-muted);font-size:.75rem;border:1px dashed var(--panel-border);border-radius:9px; }
+
+.zoom-controls { bottom:68px !important; }
+.legend-bar { bottom:68px !important; }
+.editor-minimap-shell { bottom:120px !important; }
+.erd-project-dock-open .zoom-controls { bottom:248px !important; }
+.erd-project-dock-open .legend-bar { bottom:248px !important; }
+.erd-project-dock-open .editor-minimap-shell { bottom:298px !important; }
+
+body.theme-paper-light .erd-project-dock { background:rgba(255,255,255,.94); }
+
+@media (max-width:1100px) {
+  .erd-project-dock { left:8px;right:8px;bottom:8px; }
+  .dock-project-name { max-width:120px; }
+  .dock-current-schema { max-width:120px; }
+  .dock-current-area { max-width:120px; }
+  .erd-project-dock-panel { grid-template-columns:1fr;grid-template-rows:auto auto auto;overflow-y:auto; }
+  .erd-project-dock.open { --dock-height:300px; }
+  .dock-scope-summary { grid-column:1; }
+  .erd-project-dock-open .zoom-controls,.erd-project-dock-open .legend-bar { bottom:318px !important; }
+  .erd-project-dock-open .editor-minimap-shell { bottom:368px !important; }
+}
+@media (max-width:720px) {
+  .dock-current-schema,.dock-path-separator { display:none; }
+  .dock-project-name { max-width:110px; }
+  .dock-current-area { max-width:130px; }
+  .dock-help,.dock-scope-summary span:last-child { display:none; }
+  .legend-bar { display:none; }
+}
