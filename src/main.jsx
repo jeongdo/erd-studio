@@ -6,6 +6,7 @@ import '../editor-project.css'
 import '../editor-project-dock-ux.css'
 import '../editor-mybatis.css'
 import '../editor-join-style.css'
+import '../editor-relation-routing-ux.css'
 import '../editor-workspace.css'
 import '../editor-desktop-shell.css'
 import '../editor-welcome.css'
@@ -48,15 +49,19 @@ function loadProjectLayer() {
               loadClassic('/editor-project-dock-ux.js', 'project-dock-ux', () => {
                 loadClassic('/editor-workspace-ui.js', 'workspace-ui', () => {
                   loadClassic('/editor-project-library.js', 'project-library', () => {
-                    loadClassic('/editor-actions.js', 'actions', () => {
-                      loadClassic('/editor-sample-actions.js', 'sample-actions', () => {
-                        loadClassic('/editor-join-actions.js', 'join-actions', () => {
-                          loadClassic('/editor-desktop-shell.js', 'desktop-shell', () => {
-                            loadClassic('/editor-welcome.js', 'welcome', () => {
-                              loadClassic('/editor-responsive-ux.js', 'responsive-ux', () => {
-                                loadClassic('/editor-join-style.js', 'join-style', () => {
-                                  loadClassic('/editor-mybatis.js', 'mybatis', () => {
-                                    loadClassic('/editor-ai-context.js', 'ai-context')
+                    // Install the final JOIN implementation before actions/menu markup.
+                    // This avoids the legacy two-table generator being captured during startup.
+                    loadClassic('/editor-join-style.js', 'join-style', () => {
+                      loadClassic('/editor-actions.js', 'actions', () => {
+                        loadClassic('/editor-sample-actions.js', 'sample-actions', () => {
+                          loadClassic('/editor-join-actions.js', 'join-actions', () => {
+                            loadClassic('/editor-relation-routing-ux.js', 'relation-routing-ux', () => {
+                              loadClassic('/editor-desktop-shell.js', 'desktop-shell', () => {
+                                loadClassic('/editor-welcome.js', 'welcome', () => {
+                                  loadClassic('/editor-responsive-ux.js', 'responsive-ux', () => {
+                                    loadClassic('/editor-mybatis.js', 'mybatis', () => {
+                                      loadClassic('/editor-ai-context.js', 'ai-context')
+                                    })
                                   })
                                 })
                               })
