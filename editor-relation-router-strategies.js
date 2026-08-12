@@ -6,8 +6,8 @@
 
   const CORRIDOR_PAD = 42;
   const ASTAR_PAD = 26;
-  const ASTAR_MARGIN = 220;
-  const ASTAR_MAX_OBSTACLES = 48;
+  const ASTAR_MARGIN = 180;
+  const ASTAR_MAX_OBSTACLES = 14;
   const TURN_PENALTY = 24;
   const CROSSING_PENALTY = 420;
   const SWITCH_PENALTY = 150;
@@ -129,12 +129,16 @@
     g.ys.forEach(y=>link(g.xs.map(x=>g.nodes.get(key(x,y))).filter(Boolean)));
     g.xs.forEach(x=>link(g.ys.map(y=>g.nodes.get(key(x,y))).filter(Boolean)));
 
-    const open=[{key:start,dir:'',cost:0,rank:Math.abs(p3.x-p0.x)+Math.abs(p3.y-p0.y)}],best=new Map([[`${start}|`,0]]),from=new Map();
+    const heap=[];
+    const push=item=>{heap.push(item);let i=heap.length-1;while(i>0){const p=Math.floor((i-1)/2);if(heap[p].rank<=item.rank)break;heap[i]=heap[p];i=p;}heap[i]=item;};
+    const pop=()=>{if(!heap.length)return null;const root=heap[0],last=heap.pop();if(heap.length){let i=0;while(true){let l=i*2+1,r=l+1;if(l>=heap.length)break;let c=r<heap.length&&heap[r].rank<heap[l].rank?r:l;if(heap[c].rank>=last.rank)break;heap[i]=heap[c];i=c;}heap[i]=last;}return root;};
+    const best=new Map([[`${start}|`,0]]),from=new Map();
+    push({key:start,dir:'',cost:0,rank:Math.abs(p3.x-p0.x)+Math.abs(p3.y-p0.y)});
     let end=null;
-    while(open.length){open.sort((a,b)=>a.rank-b.rank||a.cost-b.cost);const cur=open.shift();if(cur.key===goal){end=cur;break;}const p=g.nodes.get(cur.key);
+    while(heap.length){const cur=pop(),curState=`${cur.key}|${cur.dir}`;if(cur.cost!==(best.get(curState)??Infinity))continue;if(cur.key===goal){end=cur;break;}const p=g.nodes.get(cur.key);
       for(const n of neighbors.get(cur.key)||[]){const nk=key(n.x,n.y),dir=p.x===n.x?'v':'h';const turn=cur.dir&&cur.dir!==dir?TURN_PENALTY:0;const cross=crossings([p,n],routed)*CROSSING_PENALTY;
         const cost=cur.cost+Math.abs(n.x-p.x)+Math.abs(n.y-p.y)+turn+cross,state=`${nk}|${dir}`;if(cost>=(best.get(state)??Infinity))continue;
-        best.set(state,cost);from.set(state,{key:cur.key,dir:cur.dir});open.push({key:nk,dir,cost,rank:cost+Math.abs(p3.x-n.x)+Math.abs(p3.y-n.y)});}}
+        best.set(state,cost);from.set(state,{key:cur.key,dir:cur.dir});push({key:nk,dir,cost,rank:cost+Math.abs(p3.x-n.x)+Math.abs(p3.y-n.y)});}}
     if(!end)return null;
     const rev=[];let state={key:end.key,dir:end.dir};while(state){rev.push(g.nodes.get(state.key));if(state.key===start&&!state.dir)break;state=from.get(`${state.key}|${state.dir}`)||null;}
     if(!rev.length||rev.at(-1)?.x!==p0.x||rev.at(-1)?.y!==p0.y)return null;
