@@ -7,33 +7,24 @@
   const W = P?.Workspace;
   const A = E?.Advanced;
   const Samples = window.ERDStudioSamples;
-  if (!E || !P || !W || !A || !Samples) {
-    throw new Error('Project workspace and sample catalog must load before project library');
+  const SourceProjects = window.ERDSourceProjects;
+  if (!E || !P || !W || !A || !Samples || !SourceProjects) {
+    throw new Error('Project workspace, sample catalog and source project bundle must load before project library');
   }
 
-  const MANIFEST_URL = '/projects/manifest.json';
   const DEFINITION_FORMAT = 'erd-studio-builtin-project';
   const originalOpenLocalFile = W.openProjectFile.bind(W);
-  let manifestCache = null;
 
-  async function fetchJson(url) {
-    const response = await fetch(url, { cache: 'no-store' });
-    if (!response.ok) throw new Error(`${url} 로드 실패 (${response.status})`);
-    return response.json();
-  }
-
-  async function manifest() {
-    if (manifestCache) return manifestCache;
-    const payload = await fetchJson(MANIFEST_URL);
+  function manifest() {
+    const payload = SourceProjects.manifest;
     if (payload?.format !== 'erd-studio-project-library' || !Array.isArray(payload.projects)) {
       throw new Error('projects/manifest.json 형식이 올바르지 않습니다.');
     }
-    manifestCache = payload;
     return payload;
   }
 
-  async function definitionFor(entry) {
-    const definition = await fetchJson(`/projects/${entry.file}`);
+  function definitionFor(entry) {
+    const definition = SourceProjects.definitions?.[entry.file];
     if (definition?.format !== DEFINITION_FORMAT || !Array.isArray(definition.schemas)) {
       throw new Error(`${entry.file} 프로젝트 정의 형식이 올바르지 않습니다.`);
     }
@@ -72,8 +63,8 @@
     };
   }
 
-  async function loadBundledProject(entryOrId) {
-    const library = await manifest();
+  function loadBundledProject(entryOrId) {
+    const library = manifest();
     const entry = typeof entryOrId === 'string'
       ? library.projects.find(project => project.id === entryOrId)
       : entryOrId;
@@ -81,7 +72,7 @@
 
     if (!W.confirmReplace(`${entry.name} 프로젝트를 열까요?\n현재 작업공간은 교체됩니다.`)) return false;
 
-    const definition = await definitionFor(entry);
+    const definition = definitionFor(entry);
     W.applyProjectFilePayload(payloadFromDefinition(definition), { reason: 'builtin-project' });
     A.showToast?.(`${entry.name} 프로젝트를 열었습니다.`);
     return true;
@@ -100,10 +91,10 @@
       </button>`).join('');
   }
 
-  async function openProjectLibrary() {
+  function openProjectLibrary() {
     let library;
     try {
-      library = await manifest();
+      library = manifest();
     } catch (err) {
       console.error(err);
       A.showToast?.('내장 프로젝트 목록을 읽지 못해 파일 선택기를 엽니다.');
@@ -126,11 +117,10 @@
     const dialog = A.ensureDialog('project-library-dialog', '프로젝트 열기', body, true);
 
     dialog.querySelectorAll('[data-builtin-project]').forEach(button => {
-      button.onclick = async () => {
+      button.onclick = () => {
         const id = button.dataset.builtinProject;
         try {
-          const opened = await loadBundledProject(id);
-          if (opened) dialog.close();
+          if (loadBundledProject(id)) dialog.close();
         } catch (err) {
           console.error(err);
           alert(`프로젝트를 열 수 없습니다.\n${err.message}`);
