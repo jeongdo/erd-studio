@@ -1,7 +1,21 @@
 /* ERD Studio editor extension */
 .editor-toolbar-group { display:flex; align-items:center; gap:6px; }
 .btn-icon:disabled { opacity:.35; cursor:not-allowed; }
-.btn-editor-primary { width:auto; padding:0 11px; gap:7px; font-size:.78rem; font-weight:700; }
+/* Keep the primary add-table action wider than the shared 36px icon button.
+   Vite injects Tailwind's .btn-icon rule after this stylesheet in dev, so the
+   combined selector intentionally has higher specificity than .btn-icon. */
+.btn-icon.btn-editor-primary {
+  width:max-content;
+  min-width:78px;
+  height:36px;
+  padding:0 11px;
+  gap:7px;
+  flex:0 0 auto;
+  justify-content:center;
+  white-space:nowrap;
+  font-size:.78rem;
+  font-weight:700;
+}
 .selection-status { font-size:.72rem; color:var(--text-muted); white-space:nowrap; }
 .editor-tools-menu { position:relative; }
 .editor-tools-menu > summary { list-style:none; width:auto; min-width:36px; padding:0 10px; gap:7px; }
@@ -54,6 +68,6 @@
 
 @media (max-width: 1280px) {
   .selection-status { display:none; }
-  .btn-editor-primary span { display:none; }
-  .btn-editor-primary { width:36px; padding:0; justify-content:center; }
+  .btn-icon.btn-editor-primary span { display:none; }
+  .btn-icon.btn-editor-primary { width:36px; min-width:36px; padding:0; }
 }
