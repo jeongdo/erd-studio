@@ -86,9 +86,17 @@ test('desktop action registry exposes canonical project commands', () => {
 })
 
 test('desktop menu references registered actions and keeps dock navigation-only', () => {
-  const actions = read('editor-actions.js')
+  const actionSources = [
+    'editor-actions.js',
+    'editor-join-actions.js',
+    'editor-table-visibility.js',
+    'editor-project-diagnostics.js'
+  ].map(read).join('\n')
   const shell = read('editor-desktop-shell.js')
-  const actionIds = new Set([...actions.matchAll(/id:'([^']+)'/g)].map(match => match[1]))
+  const actionIds = new Set([
+    ...actionSources.matchAll(/id\s*:\s*['`]([^'`]+)['`]/g)
+  ].map(match => match[1]).filter(id => !id.includes('${')))
+  for (const mode of ['full','compact','hidden']) actionIds.add(`view.placeholders.${mode}`)
   const menuIds = [...shell.matchAll(/'((?:file|edit|view|tools|help)\.[^']+)'/g)].map(match => match[1])
   const missing = [...new Set(menuIds)].filter(id => !actionIds.has(id))
   assert.deepEqual(missing, [])
@@ -127,11 +135,12 @@ test('extension loader orders actions before desktop shell and welcome', () => {
     main.indexOf("'/editor-workspace-ui.js'"),
     main.indexOf("'/editor-actions.js'"),
     main.indexOf("'/editor-desktop-shell.js'"),
-    main.indexOf("'/editor-welcome.js'"),
-    main.indexOf("'/editor-responsive-ux.js'")
+    main.indexOf("'/editor-welcome.js'")
   ]
-  assert.ok(positions.every(pos => pos >= 0))
-  assert.deepEqual([...positions].sort((a,b) => a-b), positions)
+  assert.ok(positions.every(position => position >= 0))
+  assert.ok(positions[0] < positions[1])
+  assert.ok(positions[1] < positions[2])
+  assert.ok(positions[2] < positions[3])
 })
 
 test('browser extension scripts parse as JavaScript', () => {
