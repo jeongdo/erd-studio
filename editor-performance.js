@@ -7,13 +7,16 @@
   const MARGIN = 500;
   const KEEP_MARGIN = 1400;
   const INTERACTION_GRACE_MS = 320;
+  const SPATIAL_CELL = 900;
   const CARD_WIDTH = 360;
   const FALLBACK_COLUMNS = 3;
   let virtualViewKey = null;
   let virtualIds = new Set();
   let retainCardsUntil = 0;
+  let spatialIndex = null;
+  let connectionFrame = 0;
+  let minimapFrame = 0;
 
-  // Virtualized cards are recreated on demand rather than retained off-screen.
   A.getDetachedCard = () => null;
 
   function tableHeight(table) {
@@ -37,6 +40,87 @@
     if (!area) return view?.tables || [];
     const allowed = new Set(area.tableIds || []);
     return (view?.tables || []).filter(table => allowed.has(E.tableId(table)));
+  }
+
+  function currentAreaId() {
+    return E.Project?.activeArea?.(currentView)?.id || '';
+  }
+
+  function tableBounds(table) {
+    const x = Number(table?.x) || 0;
+    const y = Number(table?.y) || 0;
+    return {
+      left: x,
+      top: y,
+      right: x + CARD_WIDTH,
+      bottom: y + tableHeight(table)
+    };
+  }
+
+  function spatialCellRange(bounds) {
+    return {
+      minX: Math.floor(bounds.left / SPATIAL_CELL),
+      maxX: Math.floor(bounds.right / SPATIAL_CELL),
+      minY: Math.floor(bounds.top / SPATIAL_CELL),
+      maxY: Math.floor(bounds.bottom / SPATIAL_CELL)
+    };
+  }
+
+  function buildSpatialIndex(view) {
+    const tables = scopedTables(view);
+    const buckets = new Map();
+    const tableById = new Map();
+
+    tables.forEach(table => {
+      const id = E.tableId(table);
+      tableById.set(id, table);
+      const range = spatialCellRange(tableBounds(table));
+      for (let x = range.minX; x <= range.maxX; x += 1) {
+        for (let y = range.minY; y <= range.maxY; y += 1) {
+          const key = `${x}:${y}`;
+          if (!buckets.has(key)) buckets.set(key, new Set());
+          buckets.get(key).add(table);
+        }
+      }
+    });
+
+    spatialIndex = {
+      viewKey: currentView,
+      areaId: currentAreaId(),
+      tablesRef: view?.tables,
+      tableCount: view?.tables?.length || 0,
+      tables,
+      tableById,
+      buckets
+    };
+    return spatialIndex;
+  }
+
+  function invalidateSpatialIndex() {
+    spatialIndex = null;
+  }
+
+  function ensureSpatialIndex(view) {
+    const valid = spatialIndex
+      && spatialIndex.viewKey === currentView
+      && spatialIndex.areaId === currentAreaId()
+      && spatialIndex.tablesRef === view?.tables
+      && spatialIndex.tableCount === (view?.tables?.length || 0);
+    return valid ? spatialIndex : buildSpatialIndex(view);
+  }
+
+  function querySpatialIndex(view, bounds) {
+    const index = ensureSpatialIndex(view);
+    const range = spatialCellRange(bounds);
+    const found = new Set();
+
+    for (let x = range.minX; x <= range.maxX; x += 1) {
+      for (let y = range.minY; y <= range.maxY; y += 1) {
+        index.buckets.get(`${x}:${y}`)?.forEach(table => found.add(table));
+      }
+    }
+
+    return [...found].filter(table => intersectsViewport(table, bounds));
   }
 
   function cameraForTables(tables) {
@@ -75,7 +159,10 @@
 
   function visibleTables(view, camera = null, margin = MARGIN) {
     const bounds = viewportBounds(camera, margin);
-    return scopedTables(view).filter(table => intersectsViewport(table, bounds));
+    if ((view?.tables?.length || 0) < THRESHOLD) {
+      return scopedTables(view).filter(table => intersectsViewport(table, bounds));
+    }
+    return querySpatialIndex(view, bounds);
   }
 
   function protectedVirtualIds() {
@@ -128,6 +215,14 @@
     status.textContent = totalCount >= THRESHOLD ? `${visibleCount}/${totalCount}` : '';
   }
 
+  function scheduleConnections() {
+    cancelAnimationFrame(connectionFrame);
+    connectionFrame = requestAnimationFrame(() => {
+      connectionFrame = 0;
+      window.updateConnections?.();
+    });
+  }
+
   function syncVirtualCards() {
     const view = A.view();
     if (!view) return false;
@@ -139,8 +234,9 @@
     }
 
     ensureTableLayout(view);
-    const candidates = scopedTables(view);
-    const tableById = new Map(candidates.map(table => [E.tableId(table), table]));
+    const index = ensureSpatialIndex(view);
+    const candidates = index.tables;
+    const tableById = index.tableById;
     const targetTables = visibleTables(view);
     const targetIds = new Set(targetTables.map(E.tableId));
     const keepBounds = viewportBounds(null, KEEP_MARGIN);
@@ -182,7 +278,7 @@
     if (changed) {
       A.applyTableColors?.();
       E.refreshSelection?.();
-      window.updateConnections?.();
+      scheduleConnections();
       A.updateGroupBounds?.();
     }
     return changed;
@@ -307,7 +403,9 @@
     if (!map) return;
     if (view) ensureTableLayout(view);
 
-    const tables = view ? scopedTables(view) : [];
+    const tables = view
+      ? ((view.tables?.length || 0) >= THRESHOLD ? ensureSpatialIndex(view).tables : scopedTables(view))
+      : [];
     if (!tables.length) {
       map.innerHTML = '';
       map.__erdMetrics = null;
@@ -351,7 +449,15 @@
     updateMinimapViewport();
   }
 
-  E.updateMinimap = renderMinimap;
+  function scheduleMinimapRender() {
+    cancelAnimationFrame(minimapFrame);
+    minimapFrame = requestAnimationFrame(() => {
+      minimapFrame = 0;
+      renderMinimap();
+    });
+  }
+
+  E.updateMinimap = scheduleMinimapRender;
 
   function navigateMinimap(event) {
     const map = document.getElementById('editor-minimap');
@@ -409,11 +515,12 @@
     if (!view || (view.tables?.length || 0) < THRESHOLD) {
       virtualViewKey = null;
       virtualIds = new Set();
+      invalidateSpatialIndex();
       baseRender(viewKey);
       requestAnimationFrame(() => {
         A.renderCanvasExtras?.();
         A.decorateRelations?.();
-        renderMinimap();
+        scheduleMinimapRender();
         updateCullingStatus(view?.tables?.length || 0, view?.tables?.length || 0);
       });
       return;
@@ -421,7 +528,9 @@
 
     ensureTableLayout(view);
     currentView = viewKey;
-    const candidates = scopedTables(view);
+    invalidateSpatialIndex();
+    const index = ensureSpatialIndex(view);
+    const candidates = index.tables;
     const camera = cameraForTables(candidates.length ? candidates : view.tables);
     const targetTables = visibleTables(view, camera);
     const fullTables = view.tables;
@@ -448,17 +557,41 @@
       A.renderCanvasExtras?.();
       A.applyTableColors?.();
       E.refreshSelection?.();
-      window.updateConnections?.();
+      scheduleConnections();
       A.decorateRelations?.();
-      renderMinimap();
+      scheduleMinimapRender();
     });
   };
 
   const baseTransform = window.applyTransform;
   window.applyTransform = function() {
-    baseTransform();
-    if ((A.view()?.tables?.length || 0) >= THRESHOLD) scheduleCull();
+    const view = A.view();
+    if ((view?.tables?.length || 0) < THRESHOLD) {
+      baseTransform();
+      updateMinimapViewport();
+      return;
+    }
+
+    // Large ERDs bypass the legacy transform wrapper because it synchronously
+    // redraws every relation and rebuilds the minimap on every mousemove.
+    canvasLayer.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+    const zoomText = document.getElementById('zoom-text');
+    if (zoomText) zoomText.innerText = `${Math.round(scale * 100)}%`;
+    scheduleCull();
+    scheduleConnections();
     updateMinimapViewport();
+  };
+
+  const baseLayout = window.applyLayout;
+  window.applyLayout = function(type) {
+    invalidateSpatialIndex();
+    const result = baseLayout(type);
+    setTimeout(() => {
+      invalidateSpatialIndex();
+      scheduleCull();
+      scheduleMinimapRender();
+    }, 700);
+    return result;
   };
 
   const baseSearch = window.handleSearch;
@@ -475,19 +608,23 @@
     });
   };
 
+  function refreshSpatialRuntime() {
+    invalidateSpatialIndex();
+    requestAnimationFrame(() => {
+      scheduleCull();
+      scheduleMinimapRender();
+    });
+  }
+
   window.addEventListener('resize', () => {
     scheduleCull();
-    renderMinimap();
+    scheduleMinimapRender();
   });
-  document.addEventListener('erd:project-scope-changed', () => requestAnimationFrame(() => {
-    scheduleCull();
-    renderMinimap();
-  }));
-  document.addEventListener('erd:project-areas-changed', () => requestAnimationFrame(renderMinimap));
-  document.addEventListener('erd:project-loaded', () => requestAnimationFrame(() => {
-    scheduleCull();
-    renderMinimap();
-  }));
+  document.addEventListener('erd:project-scope-changed', refreshSpatialRuntime);
+  document.addEventListener('erd:project-areas-changed', refreshSpatialRuntime);
+  document.addEventListener('erd:project-loaded', refreshSpatialRuntime);
+  document.addEventListener('erd:workspace-changed', refreshSpatialRuntime);
+  document.addEventListener('erd:table-position-changed', refreshSpatialRuntime);
   document.addEventListener('click', event => {
     if (event.target.closest('[data-dock-toggle]') || event.target.closest('[onclick*="toggleInspector"]')) {
       requestAnimationFrame(() => requestAnimationFrame(updateMinimapViewport));
@@ -495,10 +632,22 @@
   }, true);
 
   installMinimapNavigation();
+
+  E.Performance = {
+    ...(E.Performance || {}),
+    threshold: THRESHOLD,
+    invalidateSpatialIndex,
+    ensureSpatialIndex,
+    querySpatialIndex,
+    scheduleCull,
+    scheduleConnections,
+    scheduleMinimapRender
+  };
+
   setTimeout(() => {
     A.renderCanvasExtras?.();
     scheduleCull();
     A.decorateRelations?.();
-    renderMinimap();
+    scheduleMinimapRender();
   }, 0);
 })();
