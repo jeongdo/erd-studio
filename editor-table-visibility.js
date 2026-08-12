@@ -7,9 +7,18 @@
   const Actions = E?.Actions;
   if (!E || !A || !Actions) return;
 
-  const PREF_SHOW_PLACEHOLDERS = 'erd_show_mybatis_placeholders_v1';
+  const PREF_MODE = 'erd_mybatis_placeholder_mode_v1';
+  const LEGACY_PREF_SHOW = 'erd_show_mybatis_placeholders_v1';
   const PREF_RELATION_FOCUS = 'erd_relation_focus_v1';
-  let showPlaceholders = localStorage.getItem(PREF_SHOW_PLACEHOLDERS) !== '0';
+  const MODES = ['full', 'compact', 'hidden'];
+
+  function initialPlaceholderMode() {
+    const saved = localStorage.getItem(PREF_MODE);
+    if (MODES.includes(saved)) return saved;
+    return localStorage.getItem(LEGACY_PREF_SHOW) === '0' ? 'hidden' : 'full';
+  }
+
+  let placeholderMode = initialPlaceholderMode();
   let relationFocus = localStorage.getItem(PREF_RELATION_FOCUS) === '1';
   let applyFrame = 0;
 
@@ -30,7 +39,7 @@
 
   function isVisible(table, view = E.currentSchema?.(), relationIds = null) {
     if (!table) return false;
-    if (!showPlaceholders && isPlaceholder(table)) return false;
+    if (placeholderMode === 'hidden' && isPlaceholder(table)) return false;
     const focusedIds = relationIds || (relationFocus ? relationTableIds(view) : null);
     if (focusedIds && !focusedIds.has(tableId(table))) return false;
     return true;
@@ -45,14 +54,21 @@
     return (view?.tables || []).filter(isPlaceholder).length;
   }
 
+  function applyCardMode(card, table, view, relationIds) {
+    const placeholder = isPlaceholder(table);
+    const compact = placeholder && placeholderMode === 'compact';
+    card.dataset.erdPlaceholder = placeholder ? '1' : '0';
+    card.classList.toggle('erd-placeholder-compact', compact);
+    card.hidden = !isVisible(table, view, relationIds);
+    const badge = card.querySelector?.('.table-badge');
+    if (badge && placeholder) badge.textContent = compact ? 'REF' : 'TABLE';
+  }
+
   function setCardVisibility(view) {
     const relationIds = relationFocus ? relationTableIds(view) : null;
     (view?.tables || []).forEach(table => {
       const card = document.getElementById(`card-${tableId(table)}`);
-      if (!card) return;
-      const placeholder = isPlaceholder(table);
-      card.dataset.erdPlaceholder = placeholder ? '1' : '0';
-      card.hidden = !isVisible(table, view, relationIds);
+      if (card) applyCardMode(card, table, view, relationIds);
     });
   }
 
@@ -106,19 +122,33 @@
     scheduleApply();
   }
 
-  function setShowPlaceholders(next, { announce = true } = {}) {
-    showPlaceholders = !!next;
-    localStorage.setItem(PREF_SHOW_PLACEHOLDERS, showPlaceholders ? '1' : '0');
-    refreshCanvas();
-    document.dispatchEvent(new CustomEvent('erd:table-visibility-changed', {
-      detail: { showPlaceholders, placeholderCount: placeholderCount() }
-    }));
-    if (announce) {
-      const count = placeholderCount();
-      A.showToast?.(showPlaceholders
-        ? `MyBatis 빈 참조 테이블 ${count}개 표시`
-        : `MyBatis 빈 참조 테이블 ${count}개 숨김 · 프로젝트 데이터는 유지`);
+  function setPlaceholderMode(next, { announce = true } = {}) {
+    if (!MODES.includes(next)) throw new Error(`Unknown placeholder mode: ${next}`);
+    const previous = placeholderMode;
+    placeholderMode = next;
+    localStorage.setItem(PREF_MODE, placeholderMode);
+    localStorage.setItem(LEGACY_PREF_SHOW, placeholderMode === 'hidden' ? '0' : '1');
+
+    const membershipChanged = (previous === 'hidden') !== (placeholderMode === 'hidden');
+    if (membershipChanged) refreshCanvas();
+    else {
+      apply();
+      scheduleApply();
     }
+
+    document.dispatchEvent(new CustomEvent('erd:table-visibility-changed', {
+      detail: { placeholderMode, relationFocus, placeholderCount: placeholderCount(), visibleCount: visibleTables().length }
+    }));
+
+    if (announce) {
+      const labels = { full:'Full', compact:'Compact', hidden:'Hidden' };
+      const count = placeholderCount();
+      A.showToast?.(`MyBatis 빈 참조 테이블 ${count}개 · ${labels[placeholderMode]} 모드`);
+    }
+  }
+
+  function setShowPlaceholders(next, options = {}) {
+    setPlaceholderMode(next ? 'full' : 'hidden', options);
   }
 
   function setRelationFocus(next, { announce = true } = {}) {
@@ -126,7 +156,7 @@
     localStorage.setItem(PREF_RELATION_FOCUS, relationFocus ? '1' : '0');
     refreshCanvas();
     document.dispatchEvent(new CustomEvent('erd:table-visibility-changed', {
-      detail: { showPlaceholders, relationFocus, visibleCount: visibleTables().length }
+      detail: { placeholderMode, relationFocus, visibleCount: visibleTables().length }
     }));
     if (announce) {
       const visible = visibleTables().length;
@@ -161,13 +191,26 @@
     observer.observe(cardsContainer, { childList: true });
   }
 
+  // Compatibility action retained for older shell/tests: toggles Full <-> Hidden.
   Actions.register({
     id: 'view.placeholders',
     label: 'MyBatis 빈 참조 테이블 표시',
     icon: 'fa-solid fa-ghost',
-    checked: () => showPlaceholders,
-    run: () => setShowPlaceholders(!showPlaceholders)
+    checked: () => placeholderMode !== 'hidden',
+    run: () => setShowPlaceholders(placeholderMode === 'hidden')
   });
+
+  [
+    ['full', 'MyBatis 참조 테이블 · Full', 'fa-solid fa-table'],
+    ['compact', 'MyBatis 참조 테이블 · Compact', 'fa-solid fa-compress'],
+    ['hidden', 'MyBatis 참조 테이블 · Hidden', 'fa-solid fa-eye-slash']
+  ].forEach(([mode, label, icon]) => Actions.register({
+    id:`view.placeholders.${mode}`,
+    label,
+    icon,
+    checked:() => placeholderMode === mode,
+    run:() => setPlaceholderMode(mode)
+  }));
 
   Actions.register({
     id: 'view.relationFocus',
@@ -178,13 +221,16 @@
   });
 
   E.TableVisibility = {
+    MODES:[...MODES],
     isPlaceholder,
     isVisible,
     relationTableIds,
     visibleTables,
     placeholderCount,
-    showPlaceholders: () => showPlaceholders,
-    relationFocus: () => relationFocus,
+    placeholderMode:() => placeholderMode,
+    showPlaceholders:() => placeholderMode !== 'hidden',
+    relationFocus:() => relationFocus,
+    setPlaceholderMode,
     setShowPlaceholders,
     setRelationFocus,
     apply
