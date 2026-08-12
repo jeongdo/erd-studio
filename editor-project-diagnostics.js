@@ -21,6 +21,25 @@
     return [rel?.from || '', rel?.to || ''].sort().join('|');
   }
 
+  function routingMetrics() {
+    if (typeof document === 'undefined') {
+      return { renderedRelations:0, routeObstacleHits:0, routeCrossings:0, fanoutRelations:0, routeModes:{} };
+    }
+    const paths = [...(document.querySelectorAll?.('#connections-svg .connection-line') || [])];
+    const routeModes = {};
+    let routeObstacleHits = 0;
+    let routeCrossings = 0;
+    let fanoutRelations = 0;
+    paths.forEach(path => {
+      const mode = path.dataset?.routeMode || 'legacy';
+      routeModes[mode] = (routeModes[mode] || 0) + 1;
+      routeObstacleHits += Number(path.dataset?.obstacleHits) || 0;
+      routeCrossings += Number(path.dataset?.routeCrossings) || 0;
+      if (path.dataset?.routeFanout === '1') fanoutRelations += 1;
+    });
+    return { renderedRelations:paths.length, routeObstacleHits, routeCrossings, fanoutRelations, routeModes };
+  }
+
   function analyze(view = E.currentSchema?.(), sources = E.Project?.state?.sources || {}) {
     const tables = view?.tables || [];
     const relations = view?.relations || [];
@@ -68,6 +87,8 @@
       ? document.querySelectorAll?.('#cards-container .table-card')?.length || 0
       : projection.projectedTableCount;
     const rendererMode = projection.projectedTableCount >= VIRTUAL_THRESHOLD ? 'Viewport Virtualized' : 'Direct';
+    const route = routingMetrics();
+    const routerMode = E.RelationRouterModes?.mode?.() || 'legacy';
 
     return {
       totalTables: tables.length,
@@ -86,6 +107,8 @@
       projectedRelations: projection.projectedRelationCount,
       mountedCards,
       rendererMode,
+      routerMode,
+      ...route,
       parallelPairs,
       issues: { missingTableRelations, missingColumnRelations }
     };
@@ -98,6 +121,7 @@
   function openDiagnostics() {
     const report = analyze();
     const issueCount = report.missingTableRelations + report.missingColumnRelations + report.physicalOverlaps;
+    const routeModeLabel = report.routerMode === 'auto' ? 'Auto Balanced' : report.routerMode === 'astar' ? 'A* Orthogonal' : report.routerMode === 'corridor' ? 'Orthogonal Corridor' : report.routerMode === 'direct' ? 'Direct Curve' : report.routerMode;
     const body = `
       <div class="manager-list">
         ${metric('전체 테이블', report.totalTables)}
@@ -108,6 +132,10 @@
         ${metric('관계', report.relationCount)}
         ${metric('관계 참여 테이블', report.relationParticipantCount, 'Relation Focus 대상')}
         ${metric('다중 관계 테이블 쌍', report.parallelRelationPairs, `${report.parallelRelationEdges}개 관계선`)}
+        ${metric('현재 렌더 관계선', `${report.renderedRelations}/${report.projectedRelations}`, routeModeLabel)}
+        ${metric('관계선 테이블 관통', report.routeObstacleHits, 'Auto 기준 0 권장')}
+        ${metric('관계선 교차 점수', report.routeCrossings, '낮을수록 정돈됨')}
+        ${metric('Fan-out / Soft Bundle', report.fanoutRelations, '복잡한 포트 주변 정돈')}
         ${metric('현재 카드 겹침', report.physicalOverlaps)}
         ${metric('없는 테이블 참조 관계', report.missingTableRelations)}
         ${metric('없는 컬럼 참조 관계', report.missingColumnRelations)}
@@ -115,7 +143,9 @@
       </div>
       <div class="empty-state">${issueCount
         ? `구조 경고 ${issueCount}건 · 먼저 배치/관계 참조를 확인하세요.`
-        : '현재 표시 가능한 구조 오류는 없습니다.'}</div>
+        : report.routeObstacleHits
+          ? `구조 오류는 없지만 관계선 ${report.routeObstacleHits}개가 테이블을 관통합니다. Auto/A* 라우터를 확인하세요.`
+          : '현재 표시 가능한 구조 오류와 관계선 관통은 없습니다.'}</div>
     `;
     A.ensureDialog('project-diagnostics-dialog', '대형 ERD 진단', body, true).showModal();
     return report;
@@ -128,5 +158,5 @@
     run: openDiagnostics
   });
 
-  E.ProjectDiagnostics = { analyze, open: openDiagnostics, pairKey };
+  E.ProjectDiagnostics = { analyze, open: openDiagnostics, pairKey, routingMetrics };
 })();
