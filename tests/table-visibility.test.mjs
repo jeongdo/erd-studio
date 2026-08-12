@@ -9,7 +9,7 @@ const here = path.dirname(fileURLToPath(import.meta.url))
 const root = path.resolve(here, '..')
 const read = name => fs.readFileSync(path.join(root, name), 'utf8')
 
-function loadVisibility(show = null) {
+function loadVisibility({ mode = null, legacyShow = null } = {}) {
   const schema = {
     tables: [
       { id:'P1', name:'P1', desc:'MyBatis 참조 테이블 (P1)', columns:[] },
@@ -19,7 +19,8 @@ function loadVisibility(show = null) {
     relations:[{ from:'REAL', fromCol:'ID', to:'P1', toCol:'ID' }]
   }
   const storage = new Map()
-  if (show !== null) storage.set('erd_show_mybatis_placeholders_v1', show ? '1' : '0')
+  if (mode !== null) storage.set('erd_mybatis_placeholder_mode_v1', mode)
+  if (legacyShow !== null) storage.set('erd_show_mybatis_placeholders_v1', legacyShow ? '1' : '0')
   const actions = new Map()
   const E = {
     Advanced:{ showToast(){} },
@@ -61,40 +62,75 @@ test('only inferred MyBatis empty nodes are placeholders', () => {
   assert.equal(E.TableVisibility.isPlaceholder(schema.tables[2]), false)
 })
 
-test('hiding placeholders keeps every project table in the schema', () => {
-  const { E, schema } = loadVisibility(true)
+test('hidden mode keeps every project table while removing placeholders from projection', () => {
+  const { E, schema } = loadVisibility({ mode:'full' })
   const before = schema.tables.map(t => t.id)
-  E.TableVisibility.setShowPlaceholders(false, { announce:false })
+  E.TableVisibility.setPlaceholderMode('hidden', { announce:false })
   assert.deepEqual(schema.tables.map(t => t.id), before)
   assert.deepEqual(E.TableVisibility.visibleTables().map(t => t.id), ['EMPTY_REAL','REAL'])
   assert.equal(E.TableVisibility.placeholderCount(), 1)
+  assert.equal(E.TableVisibility.placeholderMode(), 'hidden')
 })
 
-test('view action toggles placeholder visibility without deleting data', () => {
-  const { E, schema, actions } = loadVisibility(true)
+test('compact mode keeps placeholders in the render projection without mutating data', () => {
+  const { E, schema } = loadVisibility({ mode:'full' })
+  const before = schema.tables.map(t => t.id)
+  E.TableVisibility.setPlaceholderMode('compact', { announce:false })
+  assert.equal(E.TableVisibility.placeholderMode(), 'compact')
+  assert.deepEqual(E.TableVisibility.visibleTables().map(t => t.id), ['P1','EMPTY_REAL','REAL'])
+  assert.deepEqual(schema.tables.map(t => t.id), before)
+})
+
+test('legacy placeholder toggle remains Full/Hidden compatible', () => {
+  const { E, schema, actions } = loadVisibility({ mode:'full' })
   const action = actions.get('view.placeholders')
   assert.ok(action)
   assert.equal(action.checked(), true)
   action.run()
   assert.equal(action.checked(), false)
+  assert.equal(E.TableVisibility.placeholderMode(), 'hidden')
+  action.run()
+  assert.equal(E.TableVisibility.placeholderMode(), 'full')
   assert.equal(schema.tables.length, 3)
+})
+
+test('old show-placeholder preference migrates to hidden mode', () => {
+  const { E } = loadVisibility({ legacyShow:false })
+  assert.equal(E.TableVisibility.placeholderMode(), 'hidden')
+  assert.equal(E.TableVisibility.showPlaceholders(), false)
+})
+
+test('Full Compact Hidden actions are mutually checked by mode', () => {
+  const { E, actions } = loadVisibility({ mode:'full' })
+  const full = actions.get('view.placeholders.full')
+  const compact = actions.get('view.placeholders.compact')
+  const hidden = actions.get('view.placeholders.hidden')
+  assert.ok(full && compact && hidden)
+  assert.equal(full.checked(), true)
+  compact.run()
+  assert.equal(compact.checked(), true)
+  assert.equal(full.checked(), false)
+  hidden.run()
+  assert.equal(hidden.checked(), true)
+  assert.equal(E.TableVisibility.visibleTables().length, 2)
 })
 
 test('table visibility extension parses as JavaScript', () => {
   assert.doesNotThrow(() => new vm.Script(read('editor-table-visibility.js'), { filename:'editor-table-visibility.js' }))
 })
 
-test('placeholder visibility loads before shell and is exposed in the View menu', () => {
+test('placeholder mode styles and menu are wired into the desktop shell', () => {
   const main = read('src/main.jsx')
-  const identity = main.indexOf("'/editor-relation-identity.js'")
-  const visibility = main.indexOf("'/editor-table-visibility.js'")
-  const shellLoad = main.indexOf("'/editor-desktop-shell.js'")
-  assert.ok(identity >= 0 && visibility > identity && shellLoad > visibility)
-  assert.match(read('editor-desktop-shell.js'), /view\.minimap','view\.legend','view\.placeholders/)
+  assert.match(main, /editor-table-visibility\.css/)
+  const shell = read('editor-desktop-shell.js')
+  assert.match(shell, /view\.placeholders\.full','view\.placeholders\.compact','view\.placeholders\.hidden','view\.relationFocus/)
+  const css = read('editor-table-visibility.css')
+  assert.match(css, /erd-placeholder-compact/)
+  assert.match(css, /width: 240px/)
 })
 
 test('relation focus projects only participating tables without mutating the project', () => {
-  const { E, schema, actions } = loadVisibility(true)
+  const { E, schema, actions } = loadVisibility({ mode:'full' })
   const before = schema.tables.map(t => t.id)
   const action = actions.get('view.relationFocus')
   assert.ok(action)
@@ -104,8 +140,4 @@ test('relation focus projects only participating tables without mutating the pro
   assert.deepEqual(schema.tables.map(t => t.id), before)
   action.run()
   assert.equal(E.TableVisibility.visibleTables().length, 3)
-})
-
-test('relation focus is exposed next to placeholder visibility in the View menu', () => {
-  assert.match(read('editor-desktop-shell.js'), /view\.placeholders','view\.relationFocus/)
 })
