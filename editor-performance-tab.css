@@ -1,0 +1,26 @@
+/* Temporary top tabs restored for large-ERD performance checks. */
+.tabs-container {
+  display:flex !important;
+  flex:0 1 410px;
+  max-width:410px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scrollbar-width:none;
+  white-space:nowrap;
+}
+.tabs-container::-webkit-scrollbar { display:none; }
+.tabs-container .tab-btn { flex:0 0 auto; padding-left:11px; padding-right:11px; }
+.tabs-container .performance-test-tab { border:1px solid rgba(251,191,36,.26); }
+.tabs-container .performance-test-tab i { color:var(--accent-amber); }
+.tabs-container .performance-test-tab.active i { color:inherit; }
+.tabs-container .performance-test-tab small {
+  font:600 .58rem 'Fira Code',monospace;
+  opacity:.75;
+}
+@media (max-width:1450px) {
+  .tabs-container { max-width:300px; }
+  .tabs-container .tab-btn { padding-left:9px; padding-right:9px; }
+}
+@media (max-width:1180px) {
+  .tabs-container { max-width:190px; }
+}

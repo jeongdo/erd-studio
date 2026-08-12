@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import './index.css'
 import '../editor-project.css'
 import '../editor-mybatis.css'
+import '../editor-performance-tab.css'
 
 // Legacy ERD modules are still classic scripts. Load project extensions in
 // dependency order after the parser has executed the legacy editor scripts.
@@ -22,7 +23,9 @@ function loadProjectLayer() {
   loadClassic('/editor-project.js', 'project', () => {
     loadClassic('/editor-project-dock.js', 'project-dock', () => {
       loadClassic('/editor-mybatis.js', 'mybatis', () => {
-        loadClassic('/editor-ai-context.js', 'ai-context')
+        loadClassic('/editor-ai-context.js', 'ai-context', () => {
+          loadClassic('/editor-performance-tab.js', 'performance-tab')
+        })
       })
     })
   })
