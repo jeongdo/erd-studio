@@ -1,4 +1,4 @@
-/** Drag UX: suppress drag-clicks and resolve large-ERD drops without moving neighboring tables. */
+/** Drag UX: suppress drag-clicks and keep large-ERD drops deterministic. */
 (() => {
   'use strict';
 
@@ -10,9 +10,7 @@
   const CARD_WIDTH = 360;
   const HEADER_HEIGHT = 60;
   const COLUMN_HEIGHT = 34;
-  const MIN_GAP = 60;
-  const SEARCH_STEP = 80;
-  const MAX_SEARCH_RINGS = 12;
+  const COLLISION_GAP = 12;
   const originalStartDrag = window.startDragCard;
   let suppressTableClickUntil = 0;
 
@@ -63,7 +61,7 @@
     function insert(table) {
       const id = tableId(table);
       if (!id || id === excludedId) return;
-      const keys = cellKeys(tableRect(table, MIN_GAP));
+      const keys = cellKeys(tableRect(table, COLLISION_GAP));
       memberships.set(id, keys);
       keys.forEach(key => {
         if (!buckets.has(key)) buckets.set(key, new Set());
@@ -100,50 +98,22 @@
   }
 
   function positionIsFree(table, index) {
-    const ownRect = tableRect(table, MIN_GAP / 2);
-    const nearby = index.query(tableRect(table, MIN_GAP));
-    return !nearby.some(other => rectsOverlap(ownRect, tableRect(other, MIN_GAP / 2)));
+    const ownRect = tableRect(table, COLLISION_GAP / 2);
+    const nearby = index.query(tableRect(table, COLLISION_GAP));
+    return !nearby.some(other => rectsOverlap(ownRect, tableRect(other, COLLISION_GAP / 2)));
   }
 
-  function perimeterOffsets(ring) {
-    const offsets = [];
-    for (let x = -ring; x <= ring; x += 1) {
-      offsets.push([x, -ring], [x, ring]);
-    }
-    for (let y = -ring + 1; y <= ring - 1; y += 1) {
-      offsets.push([-ring, y], [ring, y]);
-    }
-    return offsets;
-  }
-
-  function findNearestFreePosition(dragged, index, fallback = null) {
+  function resolveDropPosition(dragged, index, startPosition) {
     const desired = { x: Number(dragged.x) || 0, y: Number(dragged.y) || 0 };
-    if (positionIsFree(dragged, index)) return { ...desired, adjusted: false };
-
-    const probe = { ...dragged };
-    for (let ring = 1; ring <= MAX_SEARCH_RINGS; ring += 1) {
-      const offsets = perimeterOffsets(ring);
-      for (const [ox, oy] of offsets) {
-        probe.x = desired.x + ox * SEARCH_STEP;
-        probe.y = desired.y + oy * SEARCH_STEP;
-        if (positionIsFree(probe, index)) {
-          return { x: probe.x, y: probe.y, adjusted: true };
-        }
-      }
+    if (positionIsFree(dragged, index)) {
+      return { ...desired, accepted: true, reverted: false };
     }
-
-    if (fallback) {
-      probe.x = fallback.x;
-      probe.y = fallback.y;
-      if (positionIsFree(probe, index)) {
-        return { x: probe.x, y: probe.y, adjusted: true, reverted: true };
-      }
-    }
-
-    // Imported layouts should normally be repaired before interaction. If no
-    // nearby free slot exists, preserve the user's requested drop rather than
-    // mutating any neighboring table.
-    return { ...desired, adjusted: false, unresolved: true };
+    return {
+      x: Number(startPosition?.x) || 0,
+      y: Number(startPosition?.y) || 0,
+      accepted: false,
+      reverted: true
+    };
   }
 
   function isLargeSchema(view) {
@@ -205,7 +175,7 @@
       dragged.y = (moveEvent.clientY - panY) / scale - dragOffY;
       card.style.left = `${dragged.x}px`;
       card.style.top = `${dragged.y}px`;
-      window.updateConnections?.();
+      E.Performance?.scheduleConnections?.() || window.updateConnections?.();
     }
 
     function onMouseMove(moveEvent) {
@@ -227,7 +197,7 @@
       if (!moved) return;
       suppressTableClickUntil = performance.now() + CLICK_SUPPRESS_MS;
 
-      const resolved = findNearestFreePosition(dragged, index, startPosition);
+      const resolved = resolveDropPosition(dragged, index, startPosition);
       dragged.x = resolved.x;
       dragged.y = resolved.y;
       card.style.left = `${dragged.x}px`;
@@ -237,13 +207,12 @@
       E.Performance?.invalidateSpatialIndex?.();
       E.Performance?.scheduleCull?.();
       E.updateMinimap?.();
-      window.updateConnections?.();
+      E.Performance?.scheduleConnections?.() || window.updateConnections?.();
       document.dispatchEvent(new CustomEvent('erd:table-position-changed', {
         detail: {
           tableId: tableIdValue,
           schemaKey: currentView,
-          collisionAdjusted: !!resolved.adjusted,
-          collisionUnresolved: !!resolved.unresolved
+          collisionRejected: !resolved.accepted
         }
       }));
     }
@@ -274,7 +243,7 @@
     cellKeys,
     createSpatialIndex,
     positionIsFree,
-    findNearestFreePosition,
+    resolveDropPosition,
     isLargeSchema
   };
 })();
