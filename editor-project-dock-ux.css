@@ -1,0 +1,12 @@
+/* Project name is context only; settings has its own explicit icon action. */
+.dock-project-display {
+  cursor:default;
+  user-select:none;
+}
+.dock-project-display:hover {
+  background:transparent !important;
+  color:var(--text-main) !important;
+}
+.dock-project-display i {
+  color:var(--accent-blue);
+}
