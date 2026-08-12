@@ -10,20 +10,21 @@ const root=path.resolve(here,'..')
 const read=name=>fs.readFileSync(path.join(root,name),'utf8')
 
 function loadModes(){
-  const actions=new Map(),storage=new Map()
+  const actions=new Map(),storage=new Map(),listeners=new Map()
   const E={
     RelationRouting:{readCanvasScale:()=>1,computeRoute:()=>({d:'M 0 0 C 1 0, 2 0, 3 0',mid:{x:1.5,y:0}})},
     RelationIdentity:{relationKey:()=> 'r',parallelLane:()=>0,laneRoute:r=>r,resolveRelation:()=>null},
     RelationRouterV2:{sampleCubic:()=>[],parseCubic:()=>null,polylinePath:()=>'',polylineMidpoint:()=>({x:0,y:0})},
     RelationRouteStrategies:{choose:()=>null},
+    RelationPortSelector:{select:()=>null},
     Actions:{register:a=>actions.set(a.id,a)},
     Advanced:{showToast(){}},currentSchema:()=>({relations:[]}),columnArray:v=>[v]
   }
-  const context={window:null,document:{getElementById(){return null},querySelectorAll(){return[]},addEventListener(){},dispatchEvent(){}},
+  const context={window:null,document:{getElementById(){return null},querySelectorAll(){return[]},addEventListener(type,fn){listeners.set(type,fn)},dispatchEvent(){}},
     localStorage:{getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,String(v))},requestAnimationFrame:fn=>{fn();return 1},CustomEvent:class{},console,Math,Number,Map,Set,Object}
   context.window=context;context.window.ERDEditor=E;context.window.updateConnections=()=>{}
   vm.runInNewContext(read('editor-relation-router-modes.js'),context,{filename:'editor-relation-router-modes.js'})
-  return {E,actions,storage}
+  return {E,actions,storage,listeners}
 }
 
 test('router modes default to Auto and persist explicit selection',()=>{
@@ -39,6 +40,15 @@ test('router modes default to Auto and persist explicit selection',()=>{
 test('router controller registers all four strategies and benchmark action',()=>{
   const {actions}=loadModes()
   for(const id of ['view.router.auto','view.router.direct','view.router.corridor','view.router.astar','tools.routerBenchmark']) assert.ok(actions.get(id),id)
+})
+
+test('router controller keeps separate route and port histories and clears them on project changes',()=>{
+  const {E,listeners}=loadModes()
+  E.RelationRouterModes.routeHistory.set('r','astar:visibility-grid')
+  E.RelationRouterModes.portHistory.set('r','right-left')
+  listeners.get('erd:project-loaded')?.()
+  assert.equal(E.RelationRouterModes.routeHistory.size,0)
+  assert.equal(E.RelationRouterModes.portHistory.size,0)
 })
 
 test('router menu extension loads after desktop shell and exposes strategy actions',()=>{
