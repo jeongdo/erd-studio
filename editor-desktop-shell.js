@@ -29,7 +29,7 @@
       id:'view', label:'보기', groups:[
         ['view.inspector','view.fit'],
         ['view.layout.grid','view.layout.tree','view.layout.organic'],
-        ['view.minimap','view.legend','view.placeholders','view.relationFocus'],
+        ['view.minimap','view.legend','view.placeholders.full','view.placeholders.compact','view.placeholders.hidden','view.relationFocus'],
         ['view.theme.cyber','view.theme.slate','view.theme.charcoal','view.theme.gold','view.theme.paper']
       ], groupLabels:['', '레이아웃', '표시', '테마']
     },
@@ -148,13 +148,10 @@
   }
 
   function cleanFragmentedCommonActions() {
-    // Bottom dock is project/schema/subject-area navigation only.
     document.querySelectorAll([
       '[data-project-new]', '[data-project-samples]', '[data-project-open]', '[data-project-save]',
       '[data-project-settings-explicit]', '[data-project-settings]', '[data-mybatis-import]', '[data-ai-context-export]'
     ].join(',')).forEach(node => node.remove());
-
-    // The canonical desktop menu replaces the catch-all wrench popover and theme select.
     document.querySelector('.editor-tools-menu')?.setAttribute('data-desktop-replaced','true');
     document.getElementById('theme-select')?.setAttribute('data-desktop-replaced','true');
   }
@@ -181,6 +178,7 @@
   document.addEventListener('erd:project-loaded', () => requestAnimationFrame(refresh));
   document.addEventListener('erd:project-info-changed', () => requestAnimationFrame(refresh));
   document.addEventListener('erd:action-invoked', () => requestAnimationFrame(refreshMenuStates));
+  document.addEventListener('erd:table-visibility-changed', () => requestAnimationFrame(refreshMenuStates));
 
   const observer = new MutationObserver(() => requestAnimationFrame(cleanFragmentedCommonActions));
   const startObserver = () => {
