@@ -16,7 +16,7 @@ function loadVisibility(show = null) {
       { id:'EMPTY_REAL', name:'EMPTY_REAL', desc:'수동 빈 테이블', columns:[] },
       { id:'REAL', name:'REAL', desc:'실제 테이블', columns:[{ name:'ID' }] }
     ],
-    relations:[]
+    relations:[{ from:'REAL', fromCol:'ID', to:'P1', toCol:'ID' }]
   }
   const storage = new Map()
   if (show !== null) storage.set('erd_show_mybatis_placeholders_v1', show ? '1' : '0')
@@ -91,4 +91,21 @@ test('placeholder visibility loads before shell and is exposed in the View menu'
   const shellLoad = main.indexOf("'/editor-desktop-shell.js'")
   assert.ok(identity >= 0 && visibility > identity && shellLoad > visibility)
   assert.match(read('editor-desktop-shell.js'), /view\.minimap','view\.legend','view\.placeholders/)
+})
+
+test('relation focus projects only participating tables without mutating the project', () => {
+  const { E, schema, actions } = loadVisibility(true)
+  const before = schema.tables.map(t => t.id)
+  const action = actions.get('view.relationFocus')
+  assert.ok(action)
+  action.run()
+  assert.equal(action.checked(), true)
+  assert.deepEqual(new Set(E.TableVisibility.visibleTables().map(t => t.id)), new Set(['P1','REAL']))
+  assert.deepEqual(schema.tables.map(t => t.id), before)
+  action.run()
+  assert.equal(E.TableVisibility.visibleTables().length, 3)
+})
+
+test('relation focus is exposed next to placeholder visibility in the View menu', () => {
+  assert.match(read('editor-desktop-shell.js'), /view\.placeholders','view\.relationFocus/)
 })

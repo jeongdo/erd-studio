@@ -29,7 +29,7 @@
       id:'view', label:'보기', groups:[
         ['view.inspector','view.fit'],
         ['view.layout.grid','view.layout.tree','view.layout.organic'],
-        ['view.minimap','view.legend','view.placeholders'],
+        ['view.minimap','view.legend','view.placeholders','view.relationFocus'],
         ['view.theme.cyber','view.theme.slate','view.theme.charcoal','view.theme.gold','view.theme.paper']
       ], groupLabels:['', '레이아웃', '표시', '테마']
     },
