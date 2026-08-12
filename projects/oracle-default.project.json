@@ -1,0 +1,12 @@
+{
+  "format": "erd-studio-builtin-project",
+  "version": 1,
+  "id": "oracle-default",
+  "name": "Oracle 기본 예제",
+  "description": "ERD Studio 기본 Oracle HR + SCOTT 프로젝트",
+  "dbms": "oracle",
+  "schemas": [
+    { "key": "oracle_hr", "sampleId": "oracle_hr" },
+    { "key": "oracle_scott", "sampleId": "oracle_scott" }
+  ]
+}

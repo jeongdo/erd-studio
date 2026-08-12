@@ -34,14 +34,16 @@ function loadProjectLayer() {
             loadClassic('/editor-project-dock.js', 'project-dock', () => {
               loadClassic('/editor-project-dock-ux.js', 'project-dock-ux', () => {
                 loadClassic('/editor-workspace-ui.js', 'workspace-ui', () => {
-                  loadClassic('/editor-actions.js', 'actions', () => {
-                    loadClassic('/editor-sample-actions.js', 'sample-actions', () => {
-                      loadClassic('/editor-desktop-shell.js', 'desktop-shell', () => {
-                        loadClassic('/editor-welcome.js', 'welcome', () => {
-                          loadClassic('/editor-responsive-ux.js', 'responsive-ux', () => {
-                            loadClassic('/editor-join-style.js', 'join-style', () => {
-                              loadClassic('/editor-mybatis.js', 'mybatis', () => {
-                                loadClassic('/editor-ai-context.js', 'ai-context')
+                  loadClassic('/editor-project-library.js', 'project-library', () => {
+                    loadClassic('/editor-actions.js', 'actions', () => {
+                      loadClassic('/editor-sample-actions.js', 'sample-actions', () => {
+                        loadClassic('/editor-desktop-shell.js', 'desktop-shell', () => {
+                          loadClassic('/editor-welcome.js', 'welcome', () => {
+                            loadClassic('/editor-responsive-ux.js', 'responsive-ux', () => {
+                              loadClassic('/editor-join-style.js', 'join-style', () => {
+                                loadClassic('/editor-mybatis.js', 'mybatis', () => {
+                                  loadClassic('/editor-ai-context.js', 'ai-context')
+                                })
                               })
                             })
                           })

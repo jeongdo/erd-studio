@@ -1,0 +1,22 @@
+{
+  "format": "erd-studio-project-library",
+  "version": 1,
+  "projects": [
+    {
+      "id": "oracle-default",
+      "name": "Oracle 기본 예제",
+      "description": "Oracle HR + SCOTT 기본 프로젝트",
+      "dbms": "oracle",
+      "icon": "fa-solid fa-database",
+      "file": "oracle-default.project.json"
+    },
+    {
+      "id": "performance-300",
+      "name": "Performance 300",
+      "description": "300 tables / 약 579 relations 성능 검증 프로젝트",
+      "dbms": "oracle",
+      "icon": "fa-solid fa-gauge-high",
+      "file": "performance-300.project.json"
+    }
+  ]
+}

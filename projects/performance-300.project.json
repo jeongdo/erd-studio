@@ -1,0 +1,11 @@
+{
+  "format": "erd-studio-builtin-project",
+  "version": 1,
+  "id": "performance-300",
+  "name": "Performance 300",
+  "description": "300 tables / 약 579 relations 렌더 성능 검증 프로젝트",
+  "dbms": "oracle",
+  "schemas": [
+    { "key": "performance_300", "sampleId": "performance_300" }
+  ]
+}
