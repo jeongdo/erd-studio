@@ -83,7 +83,9 @@ test('parallel lane changes detour corridor without moving endpoints', () => {
 test('polyline midpoint follows routed distance rather than bounding-box center', () => {
   const { router } = loadRouter()
   const points = [{x:0,y:0},{x:100,y:0},{x:100,y:100},{x:300,y:100}]
-  assert.deepEqual(router.polylineMidpoint(points), { x:100, y:100 })
+  const midpoint = router.polylineMidpoint(points)
+  assert.equal(midpoint.x, 100)
+  assert.equal(midpoint.y, 100)
 })
 
 test('router v2 loads after stable relation identity and before visibility projection', () => {
