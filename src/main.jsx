@@ -4,7 +4,6 @@ import './index.css'
 import '../editor-project.css'
 import '../editor-project-dock-ux.css'
 import '../editor-mybatis.css'
-import '../editor-performance-tab.css'
 import '../editor-join-style.css'
 import '../editor-workspace.css'
 import '../editor-desktop-shell.css'
@@ -28,19 +27,21 @@ function loadProjectLayer() {
   loadClassic('/editor-drag-ux.js', 'drag-ux')
   loadClassic('/editor-header-ux.js', 'header-ux')
   loadClassic('/editor-sample-catalog.js', 'sample-catalog', () => {
-    loadClassic('/editor-project.js', 'project', () => {
-      loadClassic('/editor-workspace.js', 'workspace', () => {
-        loadClassic('/editor-project-dock.js', 'project-dock', () => {
-          loadClassic('/editor-project-dock-ux.js', 'project-dock-ux', () => {
-            loadClassic('/editor-workspace-ui.js', 'workspace-ui', () => {
-              loadClassic('/editor-actions.js', 'actions', () => {
-                loadClassic('/editor-desktop-shell.js', 'desktop-shell', () => {
-                  loadClassic('/editor-welcome.js', 'welcome', () => {
-                    loadClassic('/editor-responsive-ux.js', 'responsive-ux', () => {
-                      loadClassic('/editor-join-style.js', 'join-style', () => {
-                        loadClassic('/editor-mybatis.js', 'mybatis', () => {
-                          loadClassic('/editor-ai-context.js', 'ai-context', () => {
-                            loadClassic('/editor-performance-tab.js', 'performance-tab')
+    loadClassic('/editor-sample-project-mode.js', 'sample-project-mode', () => {
+      loadClassic('/editor-project.js', 'project', () => {
+        loadClassic('/editor-workspace.js', 'workspace', () => {
+          loadClassic('/editor-project-dock.js', 'project-dock', () => {
+            loadClassic('/editor-project-dock-ux.js', 'project-dock-ux', () => {
+              loadClassic('/editor-workspace-ui.js', 'workspace-ui', () => {
+                loadClassic('/editor-actions.js', 'actions', () => {
+                  loadClassic('/editor-sample-actions.js', 'sample-actions', () => {
+                    loadClassic('/editor-desktop-shell.js', 'desktop-shell', () => {
+                      loadClassic('/editor-welcome.js', 'welcome', () => {
+                        loadClassic('/editor-responsive-ux.js', 'responsive-ux', () => {
+                          loadClassic('/editor-join-style.js', 'join-style', () => {
+                            loadClassic('/editor-mybatis.js', 'mybatis', () => {
+                              loadClassic('/editor-ai-context.js', 'ai-context')
+                            })
                           })
                         })
                       })
