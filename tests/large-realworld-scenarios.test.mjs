@@ -36,7 +36,6 @@ function makeScenario({ total, placeholders, relationCount, participants }) {
 
   const participantIds = Array.from({ length:participants }, (_, i) => `REAL_${String(i).padStart(3,'0')}`)
   const relations = []
-  // Three parallel pairs mirror the structural stress shape without real project names.
   for (let p = 0; p < 3; p += 1) {
     const from = participantIds[p * 2]
     const to = participantIds[p * 2 + 1]
@@ -90,7 +89,28 @@ function loadVisibility(schema) {
   }
   context.window=context; context.window.ERDEditor=E; context.window.renderView=()=>{}; context.window.updateConnections=()=>{}
   vm.runInNewContext(read('editor-table-visibility.js'), context, { filename:'editor-table-visibility.js' })
-  return E.TableVisibility
+  return { visibility:E.TableVisibility, E }
+}
+
+function loadProjection(schema, visibility) {
+  const E = {
+    tableId:t=>t.id||t.name,
+    currentSchema:()=>schema,
+    selectedIds:new Set(),
+    refreshSelection(){},
+    updateMinimap(){},
+    Advanced:{ showToast(){} },
+    Project:{ activeArea:()=>null },
+    TableVisibility:visibility
+  }
+  const context = {
+    window:null, schemaData:{main:schema}, currentView:'main', renderView(){},
+    requestAnimationFrame(){return 1}, cancelAnimationFrame(){},
+    document:{addEventListener(){},dispatchEvent(){}}, CustomEvent:class{}, console, Set, Map
+  }
+  context.window=context; context.window.ERDEditor=E
+  vm.runInNewContext(read('editor-view-projection.js'), context, { filename:'editor-view-projection.js' })
+  return E.ViewProjection
 }
 
 function loadIdentity(relations) {
@@ -105,21 +125,50 @@ function loadIdentity(relations) {
   return E.RelationIdentity
 }
 
+function loadRouter() {
+  const E = {
+    currentSchema:()=>({relations:[]}), columnArray:v=>Array.isArray(v)?v:[v],
+    RelationRouting:{computeRoute:()=>({axis:'horizontal',d:'M 0 50 C 100 50, 200 50, 300 50',mid:{x:150,y:50}}),readCanvasScale:()=>1},
+    RelationIdentity:{resolveRelation:()=>null,parallelLane:()=>0,laneRoute:r=>r}
+  }
+  const context={window:null,document:{getElementById(){return null},querySelectorAll(){return[]},addEventListener(){}},requestAnimationFrame(){},console,Number,Math}
+  context.window=context; context.window.ERDEditor=E; context.window.updateConnections=()=>{}
+  vm.runInNewContext(read('editor-relation-router-v2.js'), context, {filename:'editor-relation-router-v2.js'})
+  return E.RelationRouterV2
+}
+
 for (const spec of [
-  { name:'master-scale', total:687, placeholders:642, relationCount:35, participants:20 },
-  { name:'analysis-scale', total:692, placeholders:641, relationCount:37, participants:24 }
+  { name:'master-scale', total:687, placeholders:642, defined:45, relationCount:35, participants:20 },
+  { name:'analysis-scale', total:692, placeholders:641, defined:51, relationCount:37, participants:24 }
 ]) {
-  test(`${spec.name} synthetic scenario preserves data while projecting and repairing layout`, () => {
+  test(`${spec.name} acceptance: Full Compact Hidden Relation Focus preserve source data`, () => {
     const schema = makeScenario(spec)
+    const sourceTables = schema.tables
+    const { visibility } = loadVisibility(schema)
+    const projection = loadProjection(schema, visibility)
+
     assert.equal(schema.tables.length, spec.total)
     assert.equal(schema.relations.length, spec.relationCount)
-
-    const visibility = loadVisibility(schema)
     assert.equal(visibility.placeholderCount(), spec.placeholders)
-    visibility.setRelationFocus(true, { announce:false })
-    assert.equal(visibility.visibleTables().length, spec.participants)
-    assert.equal(schema.tables.length, spec.total)
+    assert.equal(projection.build(schema,'main').projectedTableCount, spec.total)
 
+    visibility.setPlaceholderMode('compact', { announce:false })
+    assert.equal(projection.build(schema,'main').projectedTableCount, spec.total)
+    assert.equal(schema.tables, sourceTables)
+
+    visibility.setPlaceholderMode('hidden', { announce:false })
+    assert.equal(projection.build(schema,'main').projectedTableCount, spec.defined)
+    assert.ok(spec.defined < 80, 'Hidden mode should bypass large-card virtualization for these real-world shapes')
+
+    visibility.setRelationFocus(true, { announce:false })
+    const focused = projection.build(schema,'main')
+    assert.equal(focused.projectedTableCount, spec.participants)
+    assert.equal(focused.projectedRelationCount, spec.relationCount)
+    assert.equal(schema.tables.length, spec.total)
+  })
+
+  test(`${spec.name} acceptance: pathological imported layout repairs to zero card overlap`, () => {
+    const schema = makeScenario(spec)
     const guard = loadGuard(schema)
     const before = guard.layoutStats(schema.tables)
     assert.equal(before.pathological, true)
@@ -139,4 +188,14 @@ test('large scenario parallel relations retain unique identity and balanced lane
   assert.notEqual(identity.relationDomId(firstPair[0],0), identity.relationDomId(firstPair[1],1))
   assert.equal(identity.parallelLane(firstPair[0],0,schema.relations), -12)
   assert.equal(identity.parallelLane(firstPair[1],1,schema.relations), 12)
+})
+
+test('large scenario obstacle router can detour around an intermediate table without moving endpoints', () => {
+  const router = loadRouter()
+  const p0={x:0,y:50}, p3={x:300,y:50}
+  const obstacle={left:120,top:20,right:180,bottom:80}
+  const route=router.chooseRoute(p0,p3,[obstacle],0)
+  assert.equal(route.intersections,0)
+  assert.deepEqual(route.points[0],p0)
+  assert.deepEqual(route.points.at(-1),p3)
 })
