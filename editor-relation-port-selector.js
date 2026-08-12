@@ -108,8 +108,7 @@
     if (!previous) return best;
     const prior = all.find(item => item.signature === previous);
     if (!prior) return best;
-    const adjusted = prior.score + PORT_SWITCH_PENALTY;
-    return adjusted <= best.score + HYSTERESIS ? prior : best;
+    return prior.score <= best.score + HYSTERESIS + PORT_SWITCH_PENALTY ? prior : best;
   }
 
   E.RelationPortSelector = { port, cubic, candidates, select, sideVector, worldPoint, worldRect };
