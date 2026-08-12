@@ -15,8 +15,9 @@ function loadModes(){
     RelationRouting:{readCanvasScale:()=>1,computeRoute:()=>({d:'M 0 0 C 1 0, 2 0, 3 0',mid:{x:1.5,y:0}})},
     RelationIdentity:{relationKey:()=> 'r',parallelLane:()=>0,laneRoute:r=>r,resolveRelation:()=>null},
     RelationRouterV2:{sampleCubic:()=>[],parseCubic:()=>null,polylinePath:()=>'',polylineMidpoint:()=>({x:0,y:0})},
-    RelationRouteStrategies:{choose:()=>null},
-    RelationPortSelector:{select:()=>null},
+    RelationRouteStrategies:{choose:()=>null,corridor:()=>null,astar:()=>null,score:x=>x},
+    RelationPortSelector:{select:()=>null,cubic:()=>({d:'M 0 0 C 1 0, 2 0, 3 0',mid:{x:1.5,y:0}})},
+    RelationFanout:{assign:()=>new Map(),active:()=>false,anchors:()=>null,compose:points=>points},
     Actions:{register:a=>actions.set(a.id,a)},
     Advanced:{showToast(){}},currentSchema:()=>({relations:[]}),columnArray:v=>[v]
   }
@@ -49,6 +50,14 @@ test('router controller keeps separate route and port histories and clears them 
   listeners.get('erd:project-loaded')?.()
   assert.equal(E.RelationRouterModes.routeHistory.size,0)
   assert.equal(E.RelationRouterModes.portHistory.size,0)
+})
+
+test('soft bundle is accepted only when obstacle and crossing quality do not regress',()=>{
+  const {E}=loadModes()
+  const plain={intersections:0,crossings:2,score:100}
+  assert.equal(E.RelationRouterModes.preferBundled(plain,{intersections:0,crossings:1,score:250}),true)
+  assert.equal(E.RelationRouterModes.preferBundled(plain,{intersections:1,crossings:0,score:10}),false)
+  assert.equal(E.RelationRouterModes.preferBundled(plain,{intersections:0,crossings:3,score:10}),false)
 })
 
 test('router menu extension loads after desktop shell and exposes strategy actions',()=>{
