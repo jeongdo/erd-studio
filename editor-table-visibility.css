@@ -1,0 +1,43 @@
+.table-card.erd-placeholder-compact {
+  width: 240px !important;
+  min-width: 240px !important;
+}
+
+.table-card.erd-placeholder-compact .table-header {
+  min-height: 42px;
+  padding: 7px 10px;
+}
+
+.table-card.erd-placeholder-compact .table-title {
+  min-width: 0;
+}
+
+.table-card.erd-placeholder-compact .table-name {
+  font-size: 11px;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table-card.erd-placeholder-compact .table-desc {
+  display: block;
+  max-width: 175px;
+  margin-top: 2px;
+  font-size: 8px;
+  line-height: 1.1;
+  opacity: .68;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table-card.erd-placeholder-compact .table-badge {
+  padding: 2px 5px;
+  font-size: 8px;
+  letter-spacing: .04em;
+}
+
+.table-card.erd-placeholder-compact .column-list {
+  display: none;
+}
