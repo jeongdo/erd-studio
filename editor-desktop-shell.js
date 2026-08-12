@@ -38,7 +38,7 @@
         ['tools.code.java','tools.code.kotlin','tools.code.typescript'],
         ['tools.impact','tools.lineage','tools.transactionScope'],
         ['tools.join','tools.joinPath','tools.dependency'],
-        ['tools.validate','tools.nplus'],
+        ['tools.validate','tools.nplus','tools.diagnostics'],
         ['tools.mybatis.index','tools.mybatis.usage'],
         ['tools.ai.scope','tools.ai.project'],
         ['tools.version.save','tools.versions','tools.templates.add','tools.templates'],
