@@ -69,3 +69,18 @@ test('relation identity loads after routing and before desktop shell', () => {
   const shell = main.indexOf("'/editor-desktop-shell.js'")
   assert.ok(routing >= 0 && identity > routing && shell > identity)
 })
+
+test('parallel lanes separate control points while keeping endpoints anchored', () => {
+  const identity = loadIdentity(parallel)
+  assert.equal(identity.parallelLane(parallel[0], 0, parallel), -12)
+  assert.equal(identity.parallelLane(parallel[1], 1, parallel), 12)
+
+  const route = { axis:'horizontal', d:'M 0 10 C 30 10, 70 20, 100 20', mid:{ x:50, y:15 } }
+  const shifted = identity.laneRoute(route, 12)
+  const nums = shifted.d.match(/-?\d+(?:\.\d+)?/g).map(Number)
+  assert.deepEqual(nums.slice(0, 2), [0, 10])
+  assert.deepEqual(nums.slice(6, 8), [100, 20])
+  assert.equal(nums[3], 22)
+  assert.equal(nums[5], 32)
+  assert.equal(shifted.mid.y, 24)
+})

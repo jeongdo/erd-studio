@@ -48,6 +48,34 @@
     return byLegacy >= 0 ? { relation: relations[byLegacy], index: byLegacy } : null;
   }
 
+  const PARALLEL_LANE_GAP = 24;
+
+  function pairKey(rel) {
+    return [rel.from, rel.to].sort().join('|');
+  }
+
+  function parallelLane(rel, index, relations) {
+    const siblings = relations
+      .map((candidate, candidateIndex) => ({ candidate, candidateIndex }))
+      .filter(item => pairKey(item.candidate) === pairKey(rel));
+    const position = siblings.findIndex(item => item.candidateIndex === index);
+    if (position < 0 || siblings.length <= 1) return 0;
+    return (position - (siblings.length - 1) / 2) * PARALLEL_LANE_GAP;
+  }
+
+  function laneRoute(route, lane) {
+    if (!lane) return route;
+    const nums = route.d.match(/-?\d+(?:\.\d+)?/g)?.map(Number) || [];
+    if (nums.length !== 8) return route;
+    const [x0, y0, x1, y1, x2, y2, x3, y3] = nums;
+    if (route.axis === 'horizontal') {
+      const d = `M ${x0} ${y0} C ${x1} ${y1 + lane}, ${x2} ${y2 + lane}, ${x3} ${y3}`;
+      return { ...route, d, mid: { x: route.mid.x, y: route.mid.y + lane * 0.75 } };
+    }
+    const d = `M ${x0} ${y0} C ${x1 + lane} ${y1}, ${x2 + lane} ${y2}, ${x3} ${y3}`;
+    return { ...route, d, mid: { x: route.mid.x + lane * 0.75, y: route.mid.y } };
+  }
+
   function moveBadge(path, mid) {
     const badge = path.nextElementSibling;
     if (!badge || badge.tagName?.toLowerCase() !== 'g') return;
@@ -65,7 +93,7 @@
     }
   }
 
-  function correctRoute(path, rel, canvasLayer, scale) {
+  function correctRoute(path, rel, index, relations, canvasLayer, scale) {
     const fromCol = columnArray(rel.fromCol)[0];
     const toCol = columnArray(rel.toCol)[0];
     const fromColumn = document.getElementById(`col-${rel.from}-${fromCol}`)?.getBoundingClientRect();
@@ -75,9 +103,15 @@
     if (!fromColumn || !toColumn || !fromCard || !toCard) return false;
 
     const canvas = canvasLayer.getBoundingClientRect();
-    const route = routing.computeRoute({ fromColumn, toColumn, fromCard, toCard, canvas, scale });
+    const baseRoute = routing.computeRoute({ fromColumn, toColumn, fromCard, toCard, canvas, scale });
+    const lane = parallelLane(rel, index, relations);
+    const route = laneRoute(baseRoute, lane);
+    path.removeAttribute('transform');
+    const badge = path.nextElementSibling;
+    if (badge?.tagName?.toLowerCase() === 'g') badge.removeAttribute('transform');
     path.setAttribute('d', route.d);
     path.dataset.routeAxis = route.axis;
+    path.dataset.parallelLane = String(lane);
     moveBadge(path, route.mid);
     return true;
   }
@@ -100,7 +134,7 @@
       path.dataset.relationKey = key;
       path.dataset.legacyRelationId = legacyId;
       path.id = relationDomId(rel, index);
-      correctRoute(path, rel, canvasLayer, scale);
+      correctRoute(path, rel, index, relations, canvasLayer, scale);
     });
   }
 
@@ -114,6 +148,8 @@
     relationKey,
     relationDomId,
     resolveRelation,
+    parallelLane,
+    laneRoute,
     decorate: decorateStableRelations
   };
 
