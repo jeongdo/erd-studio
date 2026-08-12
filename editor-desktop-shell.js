@@ -11,15 +11,19 @@
       id:'file', label:'파일', groups:[
         ['file.new','file.open','file.save'],
         ['file.samples','file.settings'],
-        ['file.import.ddl','file.import.mybatis']
-      ]
+        ['file.import.ddl','file.import.mybatis','file.import.json'],
+        ['file.export.ddl.oracle','file.export.ddl.postgres','file.export.ddl.mysql'],
+        ['file.export.json','file.export.png','file.export.svg'],
+        ['file.export.spec.md','file.export.spec.csv','file.export.spec.xls']
+      ], groupLabels:['', '', '가져오기', 'DDL 내보내기', '파일 내보내기', '명세 내보내기']
     },
     {
       id:'edit', label:'편집', groups:[
         ['edit.undo','edit.redo'],
-        ['edit.table.add','edit.relation.manage','edit.relation.link'],
-        ['edit.duplicate','edit.delete']
-      ]
+        ['edit.table.add','edit.duplicate','edit.delete','edit.color'],
+        ['edit.relation.manage','edit.relation.link'],
+        ['edit.note.add','edit.subjectArea.canvas']
+      ], groupLabels:['', '테이블', '관계', '캔버스']
     },
     {
       id:'view', label:'보기', groups:[
@@ -31,13 +35,16 @@
     },
     {
       id:'tools', label:'도구', groups:[
+        ['tools.code.java','tools.code.kotlin','tools.code.typescript'],
+        ['tools.impact','tools.lineage','tools.transactionScope'],
         ['tools.join','tools.joinPath','tools.dependency'],
         ['tools.validate','tools.nplus'],
-        ['tools.mybatis.index'],
+        ['tools.mybatis.index','tools.mybatis.usage'],
         ['tools.ai.scope','tools.ai.project'],
-        ['tools.versions','tools.templates'],
-        ['tools.performance']
-      ], groupLabels:['SQL / 관계', '검증', 'MyBatis', 'AI Context', '프로젝트 도구', 'Benchmark']
+        ['tools.version.save','tools.versions','tools.templates.add','tools.templates'],
+        ['tools.performance'],
+        ['tools.reset']
+      ], groupLabels:['코드 생성', '영향 분석', 'SQL / 관계', '검증', 'MyBatis', 'AI Context', '프로젝트 도구', 'Benchmark', 'Maintenance']
     },
     {
       id:'help', label:'도움말', groups:[['help.shortcuts','help.about']]

@@ -98,6 +98,18 @@ test('desktop menu references registered actions and keeps dock navigation-only'
   }
 })
 
+test('legacy tool capabilities remain reachable through canonical actions', () => {
+  const actions = read('editor-actions.js')
+  const globals = [
+    'addNoteAt','createSubjectArea','changeTableColor','generateCode','analyzeRelations','transactionScopeGuide',
+    'generateJoinForSelected','generateJoinPath','showDependencyOrder','detectNPlusOneRisk','validateSchema',
+    'openDdlImportDialog','exportDdl','exportSchemaJson','importSchemaJson','openTemplateManager',
+    'manualVersionSave','openVersionHistory','exportDiagram','exportSpecification','resetSavedSchema',
+    'openMyBatisImport','openMyBatisIndex','showMapperUsage','exportAiScopeContext','exportAiProjectContext'
+  ]
+  for (const name of globals) assert.equal(actions.includes(`callGlobal('${name}'`), true, name)
+})
+
 test('welcome hub is limited to blank workspaces and exposes project entry paths', () => {
   const welcome = read('editor-welcome.js')
   assert.match(welcome, /isBlankWorkspace/)
