@@ -116,6 +116,14 @@
     };
   }
 
+  function scheduleConnections() {
+    if (typeof E.Performance?.scheduleConnections === 'function') {
+      E.Performance.scheduleConnections();
+      return;
+    }
+    window.updateConnections?.();
+  }
+
   function isLargeSchema(view) {
     return (view?.tables?.length || 0) >= LARGE_SCHEMA_THRESHOLD;
   }
@@ -175,7 +183,7 @@
       dragged.y = (moveEvent.clientY - panY) / scale - dragOffY;
       card.style.left = `${dragged.x}px`;
       card.style.top = `${dragged.y}px`;
-      E.Performance?.scheduleConnections?.() || window.updateConnections?.();
+      scheduleConnections();
     }
 
     function onMouseMove(moveEvent) {
@@ -207,7 +215,7 @@
       E.Performance?.invalidateSpatialIndex?.();
       E.Performance?.scheduleCull?.();
       E.updateMinimap?.();
-      E.Performance?.scheduleConnections?.() || window.updateConnections?.();
+      scheduleConnections();
       document.dispatchEvent(new CustomEvent('erd:table-position-changed', {
         detail: {
           tableId: tableIdValue,
