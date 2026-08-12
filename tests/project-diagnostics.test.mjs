@@ -9,7 +9,7 @@ const here = path.dirname(fileURLToPath(import.meta.url))
 const root = path.resolve(here, '..')
 const read = name => fs.readFileSync(path.join(root, name), 'utf8')
 
-function loadDiagnostics(schema, unresolved = []) {
+function loadDiagnostics(schema, unresolved = [], projection = null) {
   const actions = new Map()
   const E = {
     Advanced: { ensureDialog(){ return { showModal(){} } } },
@@ -20,9 +20,11 @@ function loadDiagnostics(schema, unresolved = []) {
     columnArray: value => Array.isArray(value) ? value : [value],
     escapeHtml: value => String(value),
     TableVisibility: {
-      isPlaceholder: table => (table.columns?.length || 0) === 0 && /^MyBatis 참조 테이블/.test(table.desc || '')
+      isPlaceholder: table => (table.columns?.length || 0) === 0 && /^MyBatis 참조 테이블/.test(table.desc || ''),
+      placeholderMode: () => 'compact'
     },
-    ImportLayoutGuard: { physicalOverlapCount: () => 3 }
+    ImportLayoutGuard: { physicalOverlapCount: () => 3 },
+    ViewProjection: projection ? { build:() => projection } : undefined
   }
   const context = { window:null, console, Map, Set }
   context.window = context
@@ -59,6 +61,25 @@ test('diagnostics separates placeholders, relation participants and parallel pai
   assert.equal(report.missingColumnRelations, 0)
 })
 
+test('diagnostics reports active projection and direct renderer below threshold', () => {
+  const schema = {
+    tables:Array.from({length:100}, (_,i) => ({id:`T${i}`, columns:[{name:'ID'}]})),
+    relations:[]
+  }
+  const { E } = loadDiagnostics(schema, [], { projectedTableCount:45, projectedRelationCount:0 })
+  const report = E.ProjectDiagnostics.analyze()
+  assert.equal(report.placeholderMode, 'compact')
+  assert.equal(report.projectedTables, 45)
+  assert.equal(report.mountedCards, 45)
+  assert.equal(report.rendererMode, 'Direct')
+})
+
+test('diagnostics marks large active projection as viewport virtualized', () => {
+  const schema = { tables:Array.from({length:100}, (_,i) => ({id:`T${i}`, columns:[]})), relations:[] }
+  const { E } = loadDiagnostics(schema, [], { projectedTableCount:100, projectedRelationCount:0 })
+  assert.equal(E.ProjectDiagnostics.analyze().rendererMode, 'Viewport Virtualized')
+})
+
 test('diagnostics reports broken table and column references without mutating schema', () => {
   const schema = {
     tables:[
@@ -84,11 +105,11 @@ test('diagnostics registers a read-only Tools action and parses', () => {
   assert.doesNotThrow(() => new vm.Script(read('editor-project-diagnostics.js'), { filename:'editor-project-diagnostics.js' }))
 })
 
-test('diagnostics loads after visibility and before shell, and is in validation menu', () => {
+test('diagnostics loads after projection and before shell, and is in validation menu', () => {
   const main = read('src/main.jsx')
-  const visibility = main.indexOf("'/editor-table-visibility.js'")
+  const projection = main.indexOf("'/editor-view-projection.js'")
   const diagnostics = main.indexOf("'/editor-project-diagnostics.js'")
   const shell = main.indexOf("'/editor-desktop-shell.js'")
-  assert.ok(visibility >= 0 && diagnostics > visibility && shell > diagnostics)
+  assert.ok(projection >= 0 && diagnostics > projection && shell > diagnostics)
   assert.match(read('editor-desktop-shell.js'), /tools\.validate','tools\.nplus','tools\.diagnostics/)
 })
