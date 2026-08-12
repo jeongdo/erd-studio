@@ -87,7 +87,28 @@ test('layout guard repairs the 687-table five-column vertical strip', () => {
   assert.equal(tables[0].x, 80)
   assert.equal(tables[0].y, 80)
   assert.equal(tables[29].x, 80)
-  assert.equal(tables[29].y, 470)
+  assert.equal(tables[29].y, 210)
+})
+
+test('height-aware rows repair physical overlaps from tall table cards', () => {
+  const tables = Array.from({ length: 100 }, (_, index) => ({
+    id: `T_${index}`,
+    x: 80 + (index % 10) * 430,
+    y: 80 + Math.floor(index / 10) * 390,
+    columns: []
+  }))
+  tables[0].columns = Array.from({ length: 15 }, (_, i) => ({ name:`C_${i}` }))
+
+  const { E } = loadGuard({ main: { tables, relations: [] } })
+  const before = E.ImportLayoutGuard.layoutStats(tables)
+  assert.ok(before.physicalOverlaps > 0)
+  assert.ok(before.reasons.includes('physical-card-overlap'))
+
+  const result = E.ImportLayoutGuard.guardSchema({ tables }, 'main')
+  assert.equal(result.changed, true)
+  assert.equal(result.after.physicalOverlaps, 0)
+  assert.equal(result.after.pathological, false)
+  assert.ok(tables[result.columns].y >= 80 + E.ImportLayoutGuard.tableHeight(tables[0]) + 70)
 })
 
 test('project-loaded open-file event repairs and persists pathological coordinates', () => {
