@@ -9,6 +9,7 @@
 
   const WORKSPACE_MIGRATION_KEY = 'erd_studio_workspace_project_first_v1';
   const VERSION_STORAGE_KEY = 'erd_studio_versions_v1';
+  const PROJECT_FILE_INPUT_ID = 'erd-project-file-input';
   const now = () => new Date().toISOString();
   const clone = value => JSON.parse(JSON.stringify(value));
   const uid = prefix => A?.uid?.(prefix) || `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
@@ -162,12 +163,18 @@
     }, { ...options, reason: 'open-file' });
   }
 
-  function openProjectFile() {
-    if (!confirmReplace('현재 프로젝트를 닫고 다른 프로젝트 파일을 열까요?\n필요하면 먼저 현재 프로젝트를 저장하세요.')) return;
-    const input = document.createElement('input');
+  function ensureProjectFileInput() {
+    let input = document.getElementById(PROJECT_FILE_INPUT_ID);
+    if (input) return input;
+
+    input = document.createElement('input');
+    input.id = PROJECT_FILE_INPUT_ID;
     input.type = 'file';
-    input.accept = '.json,.erdproject';
-    input.onchange = async () => {
+    input.hidden = true;
+    input.tabIndex = -1;
+    input.accept = '.erdproject.json,.erdproject,.json,application/json';
+    input.setAttribute('aria-hidden', 'true');
+    input.addEventListener('change', async () => {
       const file = input.files?.[0];
       if (!file) return;
       try {
@@ -176,8 +183,18 @@
       } catch (err) {
         console.error(err);
         alert(`프로젝트 파일을 열 수 없습니다.\n${err.message}`);
+      } finally {
+        input.value = '';
       }
-    };
+    });
+    document.body.appendChild(input);
+    return input;
+  }
+
+  function openProjectFile() {
+    if (!confirmReplace('현재 프로젝트를 닫고 다른 프로젝트 파일을 열까요?\n필요하면 먼저 현재 프로젝트를 저장하세요.')) return;
+    const input = ensureProjectFileInput();
+    input.value = '';
     input.click();
   }
 
