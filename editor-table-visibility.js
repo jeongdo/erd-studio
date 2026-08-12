@@ -95,13 +95,21 @@
     applyFrame = requestAnimationFrame(apply);
   }
 
-  function setShowPlaceholders(next, { announce = true } = {}) {
-    showPlaceholders = !!next;
-    localStorage.setItem(PREF_SHOW_PLACEHOLDERS, showPlaceholders ? '1' : '0');
+  function refreshCanvas() {
+    if (E.ViewProjection?.refresh) {
+      E.ViewProjection.refresh();
+      return;
+    }
     apply();
     window.updateConnections?.();
     E.updateMinimap?.();
     scheduleApply();
+  }
+
+  function setShowPlaceholders(next, { announce = true } = {}) {
+    showPlaceholders = !!next;
+    localStorage.setItem(PREF_SHOW_PLACEHOLDERS, showPlaceholders ? '1' : '0');
+    refreshCanvas();
     document.dispatchEvent(new CustomEvent('erd:table-visibility-changed', {
       detail: { showPlaceholders, placeholderCount: placeholderCount() }
     }));
@@ -116,10 +124,7 @@
   function setRelationFocus(next, { announce = true } = {}) {
     relationFocus = !!next;
     localStorage.setItem(PREF_RELATION_FOCUS, relationFocus ? '1' : '0');
-    apply();
-    window.updateConnections?.();
-    E.updateMinimap?.();
-    scheduleApply();
+    refreshCanvas();
     document.dispatchEvent(new CustomEvent('erd:table-visibility-changed', {
       detail: { showPlaceholders, relationFocus, visibleCount: visibleTables().length }
     }));
