@@ -157,7 +157,8 @@
 
     const summary = dock.querySelector('[data-scope-summary]');
     if (!area) {
-      const mapper = state.sources?.mybatis;
+      const mapper = state.sources?.mybatisIndexes?.[currentView]
+        || (state.sources?.mybatis?.schemaKey === currentView ? state.sources.mybatis : null);
       const statements = mapper?.statements?.length || 0;
       summary.innerHTML = `<span><i class="fa-solid fa-layer-group"></i> 현재 스키마 전체를 표시 중입니다.</span><span>${schemaData[currentView]?.tables?.length || 0} tables · ${(schemaData[currentView]?.relations || []).length} relations${statements ? ` · ${statements} mapper SQL` : ''}</span>`;
     } else {
@@ -333,6 +334,7 @@
     if (count) count.textContent = `${visibleTableCount()} tables`;
   }
 
+  // Keep the scope after any normal render or relation redraw.
   const baseRender = window.renderView;
   window.renderView = function(viewKey) {
     baseRender(viewKey);

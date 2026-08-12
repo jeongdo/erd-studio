@@ -37,7 +37,8 @@
           files: [],
           statements: [],
           tableUsage: {}
-        }
+        },
+        mybatisIndexes: {}
       }
     };
   }
@@ -71,7 +72,8 @@
       sources: {
         ...base.sources,
         ...(raw.sources || {}),
-        mybatis: { ...base.sources.mybatis, ...(raw.sources?.mybatis || {}) }
+        mybatis: { ...base.sources.mybatis, ...(raw.sources?.mybatis || {}) },
+        mybatisIndexes: { ...(raw.sources?.mybatisIndexes || {}) }
       }
     };
   }
@@ -120,11 +122,13 @@
         const light = clone(state);
         light.sources.mybatis = {
           importedAt: state.sources?.mybatis?.importedAt || null,
+          schemaKey: state.sources?.mybatis?.schemaKey || null,
           files: [],
           statements: [],
           tableUsage: {},
           localStorageOmitted: true
         };
+        light.sources.mybatisIndexes = {};
         localStorage.setItem(STORAGE_KEY, JSON.stringify(light));
       } catch (fallbackErr) {
         console.warn('ERD project persistence failed:', fallbackErr);

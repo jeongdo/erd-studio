@@ -21,7 +21,9 @@ function loadClassic(src, marker, onload) {
 function loadProjectLayer() {
   loadClassic('/editor-project.js', 'project', () => {
     loadClassic('/editor-project-dock.js', 'project-dock', () => {
-      loadClassic('/editor-mybatis.js', 'mybatis')
+      loadClassic('/editor-mybatis.js', 'mybatis', () => {
+        loadClassic('/editor-ai-context.js', 'ai-context')
+      })
     })
   })
 }

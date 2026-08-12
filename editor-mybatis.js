@@ -12,6 +12,13 @@
     'UNION','MINUS','EXCEPT','CONNECT','START','SET','VALUES','RETURNING','WHEN','USING'
   ]);
 
+  function mapperIndex(schemaKey = currentView) {
+    const indexes = P.state.sources?.mybatisIndexes || {};
+    return indexes[schemaKey]
+      || (P.state.sources?.mybatis?.schemaKey === schemaKey ? P.state.sources.mybatis : null)
+      || null;
+  }
+
   function stripDoctype(xml) {
     return String(xml || '')
       .replace(/<!DOCTYPE[\s\S]*?\]>/gi, '')
@@ -392,7 +399,7 @@
   }
 
   function updateSourceIndex(parsedFiles, analysis, schemaKey) {
-    const mapper = P.state.sources.mybatis = {
+    const mapper = {
       importedAt: new Date().toISOString(),
       schemaKey,
       files: parsedFiles.map(file => ({
@@ -404,6 +411,9 @@
       statements: analysis.statements,
       tableUsage: Object.fromEntries([...analysis.tableUsage.entries()].map(([table, refs]) => [table, refs]))
     };
+    P.state.sources.mybatisIndexes ||= {};
+    P.state.sources.mybatisIndexes[schemaKey] = mapper;
+    P.state.sources.mybatis = mapper;
     P.save();
     return mapper;
   }
@@ -548,7 +558,7 @@
 
   function showMapperUsage(tableId = E.primarySelectedId?.()) {
     if (!tableId) return alert('테이블을 선택하세요.');
-    const mapper = P.state.sources?.mybatis;
+    const mapper = mapperIndex(currentView);
     const refs = mapper?.tableUsage?.[tableId] || [];
     if (!refs.length) {
       E.showOutput?.('MyBatis Usage', `${tableId}\n\nMyBatis 사용처가 인덱싱되어 있지 않습니다.`);
@@ -571,7 +581,7 @@
   }
 
   function openMyBatisIndex() {
-    const mapper = P.state.sources?.mybatis;
+    const mapper = mapperIndex(currentView);
     if (!mapper?.importedAt) {
       alert('아직 MyBatis 인덱스가 없습니다.');
       return;
@@ -652,7 +662,8 @@
     scanFiles,
     openImport: openMyBatisImport,
     openIndex: openMyBatisIndex,
-    showUsage: showMapperUsage
+    showUsage: showMapperUsage,
+    mapperIndex
   };
   Object.assign(window, { openMyBatisImport, openMyBatisIndex, showMapperUsage });
 })();
