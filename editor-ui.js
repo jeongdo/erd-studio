@@ -32,7 +32,7 @@
       <div class="context-separator"></div>
       ${['SELECT','INSERT','UPDATE','DELETE','MERGE'].map(a=>`<button data-sql="${a}">${a} SQL</button>`).join('')}
       <div class="context-separator"></div>
-      <button data-action="join" ${two?'':'disabled'}>선택 2개 JOIN SQL</button>
+      <button data-action="join" ${multi?'':'disabled'}>선택 테이블 JOIN SQL</button>
       <button data-action="path" ${two?'':'disabled'}>Join Path Finder</button>
       <button data-action="group" ${multi?'':'disabled'}>선택 테이블 Subject Area</button>
       <button data-action="transaction">Transaction Scope</button>
