@@ -70,7 +70,7 @@
     const keys = Object.keys(nextSchemas);
     if (!keys.length) throw new Error('프로젝트에는 최소 하나의 스키마가 필요합니다.');
 
-    Object.keys(schemaData).forEach(key => delete schemaData[key]);
+    Reflect.ownKeys(schemaData).forEach(key => delete schemaData[key]);
     Object.assign(schemaData, nextSchemas);
 
     const state = P.state;
@@ -190,11 +190,25 @@
   }
 
   function migrateLegacyBootstrap() {
-    if (localStorage.getItem(WORKSPACE_MIGRATION_KEY) === '1') return;
+    const migrated = localStorage.getItem(WORKSPACE_MIGRATION_KEY) === '1';
     const genericProject = !P.state.project?.name || P.state.project.name === 'ERD Project';
-    if (genericProject && isLegacyBundledSampleWorkspace()) {
-      createBlankProject({ name: '새 프로젝트', dbms: 'oracle', schemaName: 'MAIN' }, { silent: true, reason: 'sample-bootstrap-migration' });
-    } else if (!Object.keys(schemaData).length) {
+
+    // Older versions persisted the bundled HR/SCOTT pair as the active schema.
+    // Convert that exact legacy bootstrap back to an empty project even when a
+    // previous migration marker exists, so reset/reload never revives samples.
+    if (isLegacyBundledSampleWorkspace() && !P.state.project?.sample) {
+      createBlankProject({
+        name: genericProject ? '새 프로젝트' : (P.state.project?.name || '새 프로젝트'),
+        dbms: P.state.project?.dbms || 'oracle',
+        schemaName: 'MAIN',
+        description: P.state.project?.description || ''
+      }, { silent: true, reason: 'sample-bootstrap-migration' });
+      localStorage.setItem(WORKSPACE_MIGRATION_KEY, '1');
+      return;
+    }
+
+    if (migrated) return;
+    if (!Object.keys(schemaData).length) {
       createBlankProject({ name: P.state.project?.name || '새 프로젝트', dbms: P.state.project?.dbms || 'oracle', schemaName: 'MAIN' }, { silent: true, reason: 'empty-recovery' });
     } else if (genericProject && Object.keys(schemaData).length === 1) {
       const only = schemaData[Object.keys(schemaData)[0]];
