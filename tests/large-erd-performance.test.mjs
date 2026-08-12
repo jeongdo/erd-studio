@@ -50,13 +50,16 @@ function loadDragUx() {
   return context.window.ERDEditor.LargeDragUX
 }
 
-test('large drag UX source parses without legacy all-pairs or neighbor displacement', () => {
+test('large drag UX source parses without all-pairs, neighbor displacement, or auto-search', () => {
   assert.doesNotThrow(() => new Function(dragSource))
   assert.doesNotMatch(dragSource, /for\s*\(\s*let i\s*=\s*0;\s*i\s*<\s*tables\.length/)
   assert.doesNotMatch(dragSource, /resolveLocalCollisions/)
   assert.doesNotMatch(dragSource, /other\.(x|y)\s*=/)
+  assert.doesNotMatch(dragSource, /findNearestFreePosition/)
+  assert.doesNotMatch(dragSource, /SEARCH_STEP|MAX_SEARCH_RINGS|perimeterOffsets/)
   assert.match(dragSource, /const LARGE_SCHEMA_THRESHOLD = 80/)
-  assert.match(dragSource, /findNearestFreePosition/)
+  assert.match(dragSource, /const COLLISION_GAP = 12/)
+  assert.match(dragSource, /resolveDropPosition/)
 })
 
 test('spatial collision index narrows 1000 tables to nearby candidates', () => {
@@ -69,47 +72,52 @@ test('spatial collision index narrows 1000 tables to nearby candidates', () => {
   }))
 
   const index = ux.createSpatialIndex(tables)
-  const nearby = index.query(ux.tableRect(tables[500], 60))
+  const nearby = index.query(ux.tableRect(tables[500], 12))
 
   assert.ok(nearby.length > 0)
   assert.ok(nearby.length < 30, `expected local candidates, got ${nearby.length}`)
 })
 
-test('large drop moves only the dragged table to a nearby free slot', () => {
+test('colliding large drop returns exactly to its start position', () => {
   const ux = loadDragUx()
   const dragged = { id: 'DRAG', x: 0, y: 0, columns: [] }
   const neighbor = { id: 'NEAR', x: 300, y: 0, columns: [] }
-  const far = { id: 'FAR', x: 5000, y: 5000, columns: [] }
-  const index = ux.createSpatialIndex([neighbor, far])
+  const index = ux.createSpatialIndex([neighbor])
   const neighborBefore = { x: neighbor.x, y: neighbor.y }
-  const farBefore = { x: far.x, y: far.y }
+  const start = { x: -1000, y: -800 }
 
   assert.equal(ux.positionIsFree(dragged, index), false)
-  const resolved = ux.findNearestFreePosition(dragged, index, { x: -1000, y: -1000 })
+  const resolved = ux.resolveDropPosition(dragged, index, start)
 
-  assert.equal(resolved.adjusted, true)
-  const probe = { ...dragged, x: resolved.x, y: resolved.y }
-  assert.equal(ux.positionIsFree(probe, index), true)
+  assert.deepEqual({ x: resolved.x, y: resolved.y }, start)
+  assert.equal(resolved.accepted, false)
+  assert.equal(resolved.reverted, true)
   assert.deepEqual({ x: neighbor.x, y: neighbor.y }, neighborBefore)
-  assert.deepEqual({ x: far.x, y: far.y }, farBefore)
 })
 
-test('a free large-ERD drop stays exactly where the user placed it', () => {
+test('free large drop stays exactly where the user placed it', () => {
   const ux = loadDragUx()
   const dragged = { id: 'DRAG', x: 100, y: 100, columns: [] }
   const index = ux.createSpatialIndex([
     { id: 'FAR', x: 5000, y: 5000, columns: [] }
   ])
 
-  const resolved = ux.findNearestFreePosition(dragged, index)
+  const resolved = ux.resolveDropPosition(dragged, index, { x: 0, y: 0 })
   assert.deepEqual({ x: resolved.x, y: resolved.y }, { x: 100, y: 100 })
-  assert.equal(resolved.adjusted, false)
+  assert.equal(resolved.accepted, true)
+  assert.equal(resolved.reverted, false)
 })
 
 test('large drag mode begins at the same virtualization threshold', () => {
   const ux = loadDragUx()
   assert.equal(ux.isLargeSchema({ tables: Array.from({ length: 79 }) }), false)
   assert.equal(ux.isLargeSchema({ tables: Array.from({ length: 80 }) }), true)
+})
+
+test('large drag uses frame-coalesced relation refresh when performance layer exposes it', () => {
+  assert.match(dragSource, /function scheduleConnections\(\)/)
+  assert.match(dragSource, /typeof E\.Performance\?\.scheduleConnections === 'function'/)
+  assert.doesNotMatch(dragSource, /scheduleConnections\?\.\(\) \|\|/)
 })
 
 test('large ERD performance layer parses', () => {
