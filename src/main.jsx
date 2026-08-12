@@ -8,6 +8,7 @@ import '../editor-performance-tab.css'
 import '../editor-join-style.css'
 import '../editor-workspace.css'
 import '../editor-desktop-shell.css'
+import '../editor-welcome.css'
 
 // Legacy ERD modules are still classic scripts. Load project extensions in
 // dependency order after the parser has executed the legacy editor scripts.
@@ -34,11 +35,13 @@ function loadProjectLayer() {
             loadClassic('/editor-workspace-ui.js', 'workspace-ui', () => {
               loadClassic('/editor-actions.js', 'actions', () => {
                 loadClassic('/editor-desktop-shell.js', 'desktop-shell', () => {
-                  loadClassic('/editor-responsive-ux.js', 'responsive-ux', () => {
-                    loadClassic('/editor-join-style.js', 'join-style', () => {
-                      loadClassic('/editor-mybatis.js', 'mybatis', () => {
-                        loadClassic('/editor-ai-context.js', 'ai-context', () => {
-                          loadClassic('/editor-performance-tab.js', 'performance-tab')
+                  loadClassic('/editor-welcome.js', 'welcome', () => {
+                    loadClassic('/editor-responsive-ux.js', 'responsive-ux', () => {
+                      loadClassic('/editor-join-style.js', 'join-style', () => {
+                        loadClassic('/editor-mybatis.js', 'mybatis', () => {
+                          loadClassic('/editor-ai-context.js', 'ai-context', () => {
+                            loadClassic('/editor-performance-tab.js', 'performance-tab')
+                          })
                         })
                       })
                     })
