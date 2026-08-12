@@ -5,10 +5,13 @@
   const A = E.Advanced;
   const THRESHOLD = 80;
   const MARGIN = 500;
+  const KEEP_MARGIN = 1400;
+  const INTERACTION_GRACE_MS = 320;
   const CARD_WIDTH = 360;
   const FALLBACK_COLUMNS = 3;
   let virtualViewKey = null;
   let virtualIds = new Set();
+  let retainCardsUntil = 0;
 
   // Virtualized cards are recreated on demand rather than retained off-screen.
   A.getDetachedCard = () => null;
@@ -49,15 +52,15 @@
     };
   }
 
-  function viewportBounds(camera = null) {
+  function viewportBounds(camera = null, margin = MARGIN) {
     const nextScale = camera?.scale ?? scale;
     const nextPanX = camera?.panX ?? panX;
     const nextPanY = camera?.panY ?? panY;
     return {
-      left: (-nextPanX) / nextScale - MARGIN,
-      top: (-nextPanY) / nextScale - MARGIN,
-      right: (-nextPanX + workspace.clientWidth) / nextScale + MARGIN,
-      bottom: (-nextPanY + workspace.clientHeight) / nextScale + MARGIN
+      left: (-nextPanX) / nextScale - margin,
+      top: (-nextPanY) / nextScale - margin,
+      right: (-nextPanX + workspace.clientWidth) / nextScale + margin,
+      bottom: (-nextPanY + workspace.clientHeight) / nextScale + margin
     };
   }
 
@@ -70,9 +73,17 @@
       && y <= bounds.bottom;
   }
 
-  function visibleTables(view, camera = null) {
-    const bounds = viewportBounds(camera);
+  function visibleTables(view, camera = null, margin = MARGIN) {
+    const bounds = viewportBounds(camera, margin);
     return scopedTables(view).filter(table => intersectsViewport(table, bounds));
+  }
+
+  function protectedVirtualIds() {
+    const ids = new Set(E.selectedIds || []);
+    try {
+      if (selectedTableId) ids.add(selectedTableId);
+    } catch {}
+    return ids;
   }
 
   function createVirtualCard(table) {
@@ -129,13 +140,22 @@
 
     ensureTableLayout(view);
     const candidates = scopedTables(view);
+    const tableById = new Map(candidates.map(table => [E.tableId(table), table]));
     const targetTables = visibleTables(view);
     const targetIds = new Set(targetTables.map(E.tableId));
+    const keepBounds = viewportBounds(null, KEEP_MARGIN);
+    const protectedIds = protectedVirtualIds();
+    const interactionLocked = performance.now() < retainCardsUntil;
     let changed = virtualViewKey !== currentView;
 
     cardsContainer.querySelectorAll('.table-card').forEach(card => {
       const id = card.id.replace(/^card-/, '');
-      if (!targetIds.has(id)) {
+      if (targetIds.has(id)) return;
+      const table = tableById.get(id);
+      const keepMounted = interactionLocked
+        || protectedIds.has(id)
+        || (table && intersectsViewport(table, keepBounds));
+      if (!keepMounted) {
         card.remove();
         changed = true;
       }
@@ -151,9 +171,13 @@
     });
     if (fragment.childNodes.length) cardsContainer.appendChild(fragment);
 
+    const mountedIds = new Set(
+      [...cardsContainer.querySelectorAll('.table-card')]
+        .map(card => card.id.replace(/^card-/, ''))
+    );
     virtualViewKey = currentView;
-    virtualIds = targetIds;
-    updateCullingStatus(targetIds.size, candidates.length);
+    virtualIds = mountedIds;
+    updateCullingStatus(mountedIds.size, candidates.length);
 
     if (changed) {
       A.applyTableColors?.();
@@ -168,6 +192,16 @@
     cancelAnimationFrame(scheduleCull.raf);
     scheduleCull.raf = requestAnimationFrame(syncVirtualCards);
   }
+
+  function protectTableInteraction(event) {
+    if (!event.target.closest?.('.table-card')) return;
+    retainCardsUntil = performance.now() + INTERACTION_GRACE_MS;
+    clearTimeout(protectTableInteraction.timer);
+    protectTableInteraction.timer = setTimeout(scheduleCull, INTERACTION_GRACE_MS + 40);
+  }
+
+  cardsContainer.addEventListener('pointerdown', protectTableInteraction, true);
+  cardsContainer.addEventListener('click', protectTableInteraction, true);
 
   A.cullViewport = syncVirtualCards;
 
