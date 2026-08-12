@@ -108,6 +108,14 @@ test('final join engine loads before action registry and desktop menu', () => {
   assert.doesNotMatch(joinActionSource, /선택 2개 JOIN SQL/)
 })
 
+test('right-click context menu allows JOIN for 2+ but keeps Path Finder at exactly two', () => {
+  const ui = read('editor-ui.js')
+  assert.match(ui, /multi=E\.selectedIds\.size>=2,two=E\.selectedIds\.size===2/)
+  assert.match(ui, /data-action="join" \$\{multi\?'':'disabled'\}>선택 테이블 JOIN SQL/)
+  assert.match(ui, /data-action="path" \$\{two\?'':'disabled'\}>Join Path Finder/)
+  assert.doesNotMatch(ui, /선택 2개 JOIN SQL/)
+})
+
 test('relation routing leaves a safe endpoint gap and avoids crossing close cards', () => {
   const routing = loadRoutingEngine()
   const canvas = rect(0, 0, 1200, 800)
