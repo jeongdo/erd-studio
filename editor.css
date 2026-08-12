@@ -34,19 +34,38 @@
 .editor-context-menu button:disabled { opacity:.35; cursor:not-allowed; }
 .editor-context-menu button.danger:hover { color:#f87171; background:rgba(248,113,113,.12); }
 
-.editor-dialog { width:min(620px, calc(100vw - 32px)); border:1px solid var(--panel-border); border-radius:14px; background:var(--bg-dark); color:var(--text-main); padding:0; box-shadow:0 28px 80px rgba(0,0,0,.65); }
-.editor-dialog::backdrop { background:rgba(2,6,23,.7); backdrop-filter:blur(3px); }
-.editor-dialog form { display:grid; }
-.editor-dialog-header { display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid var(--panel-border); }
+/*
+ * Application-modal convention.
+ * Tailwind's global `* { margin:0 }` reset removes the browser default
+ * centering for <dialog>. Explicitly center every ERD Studio modal while
+ * leaving drawers, output panels, minimap and context menus untouched.
+ */
+dialog.editor-dialog {
+  position:fixed;
+  inset:0;
+  margin:auto;
+  width:min(620px, calc(100vw - 32px));
+  max-height:calc(100dvh - 32px);
+  overflow:hidden;
+  border:1px solid var(--panel-border);
+  border-radius:14px;
+  background:var(--bg-dark);
+  color:var(--text-main);
+  padding:0;
+  box-shadow:0 28px 80px rgba(0,0,0,.65);
+}
+dialog.editor-dialog::backdrop { background:rgba(2,6,23,.7); backdrop-filter:blur(3px); }
+dialog.editor-dialog form { display:grid; max-height:inherit; }
+.editor-dialog-header { display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid var(--panel-border); flex:0 0 auto; }
 .editor-dialog-header h3 { font-size:1rem; }
-.editor-dialog-body { display:grid; gap:14px; padding:18px; }
+.editor-dialog-body { display:grid; gap:14px; padding:18px; max-height:min(72dvh, 720px); overflow:auto; overscroll-behavior:contain; }
 .editor-field { display:grid; gap:6px; }
 .editor-field label { color:var(--text-muted); font-size:.75rem; font-weight:700; }
 .editor-field input,.editor-field textarea { width:100%; border:1px solid var(--panel-border); border-radius:8px; background:rgba(15,23,42,.72); color:var(--text-main); padding:10px 11px; outline:none; font:500 .82rem 'Fira Code', monospace; user-select:text; }
 .editor-field input:focus,.editor-field textarea:focus { border-color:var(--accent-blue); box-shadow:0 0 0 2px rgba(56,189,248,.1); }
 .editor-field textarea { min-height:220px; resize:vertical; line-height:1.55; }
 .editor-field small { color:var(--text-muted); font-size:.69rem; }
-.editor-dialog-actions { display:flex; justify-content:flex-end; gap:8px; padding:14px 18px; border-top:1px solid var(--panel-border); }
+.editor-dialog-actions { display:flex; justify-content:flex-end; gap:8px; padding:14px 18px; border-top:1px solid var(--panel-border); flex:0 0 auto; }
 .editor-btn { border:1px solid var(--panel-border); border-radius:7px; background:rgba(30,41,59,.7); color:var(--text-main); padding:8px 13px; cursor:pointer; font-size:.78rem; font-weight:700; }
 .editor-btn:hover { border-color:var(--accent-blue); color:var(--accent-blue); }
 .editor-btn.primary { background:var(--accent-blue); color:#07111c; border-color:var(--accent-blue); }
@@ -70,4 +89,15 @@
   .selection-status { display:none; }
   .btn-icon.btn-editor-primary span { display:none; }
   .btn-icon.btn-editor-primary { width:36px; min-width:36px; padding:0; }
+}
+
+@media (max-width: 640px) {
+  dialog.editor-dialog {
+    width:calc(100vw - 20px);
+    max-height:calc(100dvh - 20px);
+  }
+  .editor-dialog-body {
+    padding:14px;
+    max-height:calc(100dvh - 120px);
+  }
 }
