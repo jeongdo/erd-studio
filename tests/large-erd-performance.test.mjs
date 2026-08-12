@@ -50,11 +50,13 @@ function loadDragUx() {
   return context.window.ERDEditor.LargeDragUX
 }
 
-test('large drag UX source parses without the legacy all-pairs collision loop', () => {
+test('large drag UX source parses without legacy all-pairs or neighbor displacement', () => {
   assert.doesNotThrow(() => new Function(dragSource))
   assert.doesNotMatch(dragSource, /for\s*\(\s*let i\s*=\s*0;\s*i\s*<\s*tables\.length/)
+  assert.doesNotMatch(dragSource, /resolveLocalCollisions/)
+  assert.doesNotMatch(dragSource, /other\.(x|y)\s*=/)
   assert.match(dragSource, /const LARGE_SCHEMA_THRESHOLD = 80/)
-  assert.match(dragSource, /const MAX_LOCAL_ITERATIONS = 2/)
+  assert.match(dragSource, /findNearestFreePosition/)
 })
 
 test('spatial collision index narrows 1000 tables to nearby candidates', () => {
@@ -73,18 +75,35 @@ test('spatial collision index narrows 1000 tables to nearby candidates', () => {
   assert.ok(nearby.length < 30, `expected local candidates, got ${nearby.length}`)
 })
 
-test('local collision resolution moves only nearby tables', () => {
+test('large drop moves only the dragged table to a nearby free slot', () => {
   const ux = loadDragUx()
   const dragged = { id: 'DRAG', x: 0, y: 0, columns: [] }
   const neighbor = { id: 'NEAR', x: 300, y: 0, columns: [] }
   const far = { id: 'FAR', x: 5000, y: 5000, columns: [] }
   const index = ux.createSpatialIndex([neighbor, far])
+  const neighborBefore = { x: neighbor.x, y: neighbor.y }
   const farBefore = { x: far.x, y: far.y }
 
-  const touched = ux.resolveLocalCollisions(dragged, index)
+  assert.equal(ux.positionIsFree(dragged, index), false)
+  const resolved = ux.findNearestFreePosition(dragged, index, { x: -1000, y: -1000 })
 
-  assert.ok(touched.has('NEAR'))
+  assert.equal(resolved.adjusted, true)
+  const probe = { ...dragged, x: resolved.x, y: resolved.y }
+  assert.equal(ux.positionIsFree(probe, index), true)
+  assert.deepEqual({ x: neighbor.x, y: neighbor.y }, neighborBefore)
   assert.deepEqual({ x: far.x, y: far.y }, farBefore)
+})
+
+test('a free large-ERD drop stays exactly where the user placed it', () => {
+  const ux = loadDragUx()
+  const dragged = { id: 'DRAG', x: 100, y: 100, columns: [] }
+  const index = ux.createSpatialIndex([
+    { id: 'FAR', x: 5000, y: 5000, columns: [] }
+  ])
+
+  const resolved = ux.findNearestFreePosition(dragged, index)
+  assert.deepEqual({ x: resolved.x, y: resolved.y }, { x: 100, y: 100 })
+  assert.equal(resolved.adjusted, false)
 })
 
 test('large drag mode begins at the same virtualization threshold', () => {
