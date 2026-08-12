@@ -99,4 +99,10 @@
 
   document.addEventListener('erd:project-scope-changed', () => refresh());
   document.addEventListener('erd:project-areas-changed', () => refresh());
+
+  // The legacy canvas can already be rendered before project extensions load.
+  // Re-render once on startup only when persisted visibility/scope settings reduce the view.
+  requestAnimationFrame(() => {
+    if (build().active) refresh();
+  });
 })();
