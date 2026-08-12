@@ -1,82 +1,175 @@
-/** Viewport culling, minimap viewport and final render hooks for large ERDs. */
+/** Pre-render viewport virtualization, minimap viewport and final render hooks for large ERDs. */
 (() => {
   'use strict';
   const E = window.ERDEditor;
   const A = E.Advanced;
   const THRESHOLD = 80;
   const MARGIN = 500;
-  const detached = new Map();
+  const CARD_WIDTH = 360;
+  const FALLBACK_COLUMNS = 3;
+  let virtualViewKey = null;
+  let virtualIds = new Set();
 
-  A.getDetachedCard = id => detached.get(id);
+  // Virtualized cards are recreated on demand rather than retained off-screen.
+  A.getDetachedCard = () => null;
 
-  function getCard(id) {
-    return document.getElementById(`card-${id}`) || detached.get(id);
+  function tableHeight(table) {
+    return 60 + (table.columns?.length || 0) * 34;
   }
 
-  function cull() {
-    const view = A.view();
-    if (!view) return;
-
-    if (view.tables.length < THRESHOLD) {
-      if (detached.size) {
-        detached.forEach(card => cardsContainer.appendChild(card));
-        detached.clear();
-        A.legacyUpdateConnections?.();
-        A.decorateRelations?.();
+  function ensureTableLayout(view) {
+    (view?.tables || []).forEach((table, index) => {
+      table.id ||= table.name;
+      if (typeof table.x === 'undefined' || typeof table.y === 'undefined') {
+        const col = index % FALLBACK_COLUMNS;
+        const row = Math.floor(index / FALLBACK_COLUMNS);
+        table.x = 60 + col * 520;
+        table.y = 80 + row * 400;
       }
-      const status = document.getElementById('culling-status');
-      if (status) status.textContent = '';
-      return;
+    });
+  }
+
+  function scopedTables(view) {
+    const area = E.Project?.activeArea?.(currentView);
+    if (!area) return view?.tables || [];
+    const allowed = new Set(area.tableIds || []);
+    return (view?.tables || []).filter(table => allowed.has(E.tableId(table)));
+  }
+
+  function cameraForTables(tables) {
+    if (!tables.length) return { panX: 0, panY: 0, scale: 1 };
+    const minX = Math.min(...tables.map(table => table.x || 0));
+    const minY = Math.min(...tables.map(table => table.y || 0));
+    const maxX = Math.max(...tables.map(table => (table.x || 0) + CARD_WIDTH));
+    const maxY = Math.max(...tables.map(table => (table.y || 0) + tableHeight(table)));
+    return {
+      panX: window.innerWidth / 2 - (minX + maxX) / 2,
+      panY: window.innerHeight / 2 - (minY + maxY) / 2,
+      scale: 1
+    };
+  }
+
+  function viewportBounds(camera = null) {
+    const nextScale = camera?.scale ?? scale;
+    const nextPanX = camera?.panX ?? panX;
+    const nextPanY = camera?.panY ?? panY;
+    return {
+      left: (-nextPanX) / nextScale - MARGIN,
+      top: (-nextPanY) / nextScale - MARGIN,
+      right: (-nextPanX + workspace.clientWidth) / nextScale + MARGIN,
+      bottom: (-nextPanY + workspace.clientHeight) / nextScale + MARGIN
+    };
+  }
+
+  function intersectsViewport(table, bounds) {
+    const x = table.x || 0;
+    const y = table.y || 0;
+    return x + CARD_WIDTH >= bounds.left
+      && x <= bounds.right
+      && y + tableHeight(table) >= bounds.top
+      && y <= bounds.bottom;
+  }
+
+  function visibleTables(view, camera = null) {
+    const bounds = viewportBounds(camera);
+    return scopedTables(view).filter(table => intersectsViewport(table, bounds));
+  }
+
+  function createVirtualCard(table) {
+    const id = E.tableId(table);
+    const card = document.createElement('div');
+    card.className = 'table-card';
+    card.id = `card-${id}`;
+    card.style.left = `${table.x || 0}px`;
+    card.style.top = `${table.y || 0}px`;
+    card.innerHTML = `
+      <div class="table-header" onmousedown="startDragCard(event, '${id}')">
+        <div class="table-title">
+          <span class="table-name">${table.name}</span>
+          <span class="table-desc">${table.desc || ''}</span>
+        </div>
+        <span class="table-badge">TABLE</span>
+      </div>
+      <div class="column-list">
+        ${(table.columns || []).map(column => `
+          <div class="column-row" id="col-${id}-${column.name}">
+            <div class="column-left">
+              <span class="key-badge ${column.pk ? 'key-pk' : (column.fk ? 'key-fk' : 'key-none')}">
+                ${column.pk ? 'PK' : (column.fk ? 'FK' : '')}
+              </span>
+              <span class="col-name">${column.name}</span>
+            </div>
+            <span class="col-type">${column.type}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    card.addEventListener('click', event => {
+      event.stopPropagation();
+      selectTable(table);
+    });
+    return card;
+  }
+
+  function updateCullingStatus(visibleCount, totalCount) {
+    const status = document.getElementById('culling-status');
+    if (!status) return;
+    status.textContent = totalCount >= THRESHOLD ? `${visibleCount}/${totalCount}` : '';
+  }
+
+  function syncVirtualCards() {
+    const view = A.view();
+    if (!view) return false;
+    if (view.tables.length < THRESHOLD) {
+      virtualViewKey = null;
+      virtualIds = new Set();
+      updateCullingStatus(view.tables.length, view.tables.length);
+      return false;
     }
 
-    const left = (-panX) / scale - MARGIN;
-    const top = (-panY) / scale - MARGIN;
-    const right = left + workspace.clientWidth / scale + MARGIN * 2;
-    const bottom = top + workspace.clientHeight / scale + MARGIN * 2;
-    let changed = false;
+    ensureTableLayout(view);
+    const candidates = scopedTables(view);
+    const targetTables = visibleTables(view);
+    const targetIds = new Set(targetTables.map(E.tableId));
+    let changed = virtualViewKey !== currentView;
 
-    view.tables.forEach(table => {
-      const id = E.tableId(table);
-      const x = table.x || 0;
-      const y = table.y || 0;
-      const height = 60 + (table.columns?.length || 0) * 34;
-      const visible = x + 360 >= left && x <= right && y + height >= top && y <= bottom;
-      const inDom = document.getElementById(`card-${id}`);
-
-      if (!visible && inDom) {
-        detached.set(id, inDom);
-        inDom.remove();
-        changed = true;
-      } else if (visible && !inDom && detached.has(id)) {
-        cardsContainer.appendChild(detached.get(id));
-        detached.delete(id);
+    cardsContainer.querySelectorAll('.table-card').forEach(card => {
+      const id = card.id.replace(/^card-/, '');
+      if (!targetIds.has(id)) {
+        card.remove();
         changed = true;
       }
     });
 
+    const fragment = document.createDocumentFragment();
+    targetTables.forEach(table => {
+      const id = E.tableId(table);
+      if (!document.getElementById(`card-${id}`)) {
+        fragment.appendChild(createVirtualCard(table));
+        changed = true;
+      }
+    });
+    if (fragment.childNodes.length) cardsContainer.appendChild(fragment);
+
+    virtualViewKey = currentView;
+    virtualIds = targetIds;
+    updateCullingStatus(targetIds.size, candidates.length);
+
     if (changed) {
       A.applyTableColors?.();
-      A.legacyUpdateConnections?.();
-      A.decorateRelations?.();
+      E.refreshSelection?.();
+      window.updateConnections?.();
+      A.updateGroupBounds?.();
     }
-
-    const status = document.getElementById('culling-status');
-    if (status) status.textContent = `${view.tables.length - detached.size}/${view.tables.length}`;
+    return changed;
   }
 
   function scheduleCull() {
     cancelAnimationFrame(scheduleCull.raf);
-    scheduleCull.raf = requestAnimationFrame(cull);
+    scheduleCull.raf = requestAnimationFrame(syncVirtualCards);
   }
 
-  A.cullViewport = cull;
-
-  function scopedMinimapTables(view) {
-    const area = E.Project?.activeArea?.(currentView);
-    if (!area) return view.tables || [];
-    const allowed = new Set(area.tableIds || []);
-    return (view.tables || []).filter(table => allowed.has(E.tableId(table)));
-  }
+  A.cullViewport = syncVirtualCards;
 
   function visibleViewport() {
     const dock = document.getElementById('erd-project-dock');
@@ -98,10 +191,8 @@
 
     let minX = Math.min(...tables.map(table => table.x || 0)) - padding;
     let minY = Math.min(...tables.map(table => table.y || 0)) - padding;
-    let maxX = Math.max(...tables.map(table => (table.x || 0) + 360)) + padding;
-    let maxY = Math.max(...tables.map(table => (
-      (table.y || 0) + 58 + (table.columns?.length || 0) * 34
-    ))) + padding;
+    let maxX = Math.max(...tables.map(table => (table.x || 0) + CARD_WIDTH)) + padding;
+    let maxY = Math.max(...tables.map(table => (table.y || 0) + tableHeight(table))) + padding;
 
     let worldWidth = Math.max(1, maxX - minX);
     let worldHeight = Math.max(1, maxY - minY);
@@ -122,7 +213,6 @@
     const miniScale = Math.min(mapWidth / worldWidth, mapHeight / worldHeight);
     const contentWidth = worldWidth * miniScale;
     const contentHeight = worldHeight * miniScale;
-
     return {
       mapWidth,
       mapHeight,
@@ -145,33 +235,11 @@
     };
   }
 
-  function renderMinimap() {
+  function updateMinimapViewport() {
     const map = document.getElementById('editor-minimap');
-    const view = E.currentSchema();
-    if (!map) return;
-
-    const tables = view ? scopedMinimapTables(view) : [];
-    if (!tables.length) {
-      map.innerHTML = '';
-      map.__erdMetrics = null;
-      return;
-    }
-
-    const metrics = minimapMetrics(map, tables);
-    map.__erdMetrics = metrics;
-    map.innerHTML = '';
-
-    tables.forEach(table => {
-      const point = toMini(metrics, table.x || 0, table.y || 0);
-      const marker = document.createElement('span');
-      marker.className = 'editor-minimap-table';
-      marker.title = table.name || E.tableId(table);
-      marker.style.left = `${point.x}px`;
-      marker.style.top = `${point.y}px`;
-      marker.style.width = `${Math.max(4, 360 * metrics.miniScale)}px`;
-      marker.style.height = `${Math.max(3, (58 + (table.columns?.length || 0) * 34) * metrics.miniScale)}px`;
-      map.appendChild(marker);
-    });
+    const metrics = map?.__erdMetrics;
+    const frame = map?.__erdViewportFrame;
+    if (!map || !metrics || !frame) return;
 
     const visible = visibleViewport();
     const viewportX = (-panX) / scale;
@@ -179,7 +247,6 @@
     const viewportWidth = visible.width / scale;
     const viewportHeight = visible.height / scale;
     const topLeft = toMini(metrics, viewportX, viewportY);
-
     const rawLeft = topLeft.x;
     const rawTop = topLeft.y;
     const rawRight = rawLeft + viewportWidth * metrics.miniScale;
@@ -189,26 +256,65 @@
     const right = Math.min(metrics.mapWidth, rawRight);
     const bottom = Math.min(metrics.mapHeight, rawBottom);
 
-    if (right > left && bottom > top) {
-      const frame = document.createElement('div');
-      const viewportColor = getComputedStyle(document.body).getPropertyValue('--text-main').trim() || '#ffffff';
-      frame.className = 'editor-minimap-viewport';
-      frame.title = '현재 화면 영역';
-      Object.assign(frame.style, {
-        position: 'absolute',
-        left: `${left}px`,
-        top: `${top}px`,
-        width: `${Math.max(2, right - left)}px`,
-        height: `${Math.max(2, bottom - top)}px`,
-        border: `1.5px solid ${viewportColor}`,
-        background: 'rgba(255,255,255,.035)',
-        borderRadius: '2px',
-        boxShadow: '0 0 0 1px rgba(0,0,0,.32), 0 0 7px rgba(255,255,255,.16)',
-        pointerEvents: 'none',
-        zIndex: '5'
-      });
-      map.appendChild(frame);
+    if (right <= left || bottom <= top) {
+      frame.style.display = 'none';
+      return;
     }
+    frame.style.display = 'block';
+    frame.style.left = `${left}px`;
+    frame.style.top = `${top}px`;
+    frame.style.width = `${Math.max(2, right - left)}px`;
+    frame.style.height = `${Math.max(2, bottom - top)}px`;
+  }
+
+  function renderMinimap() {
+    const map = document.getElementById('editor-minimap');
+    const view = E.currentSchema();
+    if (!map) return;
+    if (view) ensureTableLayout(view);
+
+    const tables = view ? scopedTables(view) : [];
+    if (!tables.length) {
+      map.innerHTML = '';
+      map.__erdMetrics = null;
+      map.__erdViewportFrame = null;
+      return;
+    }
+
+    const metrics = minimapMetrics(map, tables);
+    map.__erdMetrics = metrics;
+    map.innerHTML = '';
+    const fragment = document.createDocumentFragment();
+
+    tables.forEach(table => {
+      const point = toMini(metrics, table.x || 0, table.y || 0);
+      const marker = document.createElement('span');
+      marker.className = 'editor-minimap-table';
+      marker.title = table.name || E.tableId(table);
+      marker.style.left = `${point.x}px`;
+      marker.style.top = `${point.y}px`;
+      marker.style.width = `${Math.max(4, CARD_WIDTH * metrics.miniScale)}px`;
+      marker.style.height = `${Math.max(3, tableHeight(table) * metrics.miniScale)}px`;
+      fragment.appendChild(marker);
+    });
+
+    const frame = document.createElement('div');
+    const viewportColor = getComputedStyle(document.body).getPropertyValue('--text-main').trim() || '#ffffff';
+    frame.className = 'editor-minimap-viewport';
+    frame.title = '현재 화면 영역';
+    Object.assign(frame.style, {
+      position: 'absolute',
+      border: `1.5px solid ${viewportColor}`,
+      background: 'rgba(255,255,255,.035)',
+      borderRadius: '2px',
+      boxShadow: '0 0 0 1px rgba(0,0,0,.32), 0 0 7px rgba(255,255,255,.16)',
+      pointerEvents: 'none',
+      zIndex: '5'
+    });
+    fragment.appendChild(frame);
+    map.appendChild(fragment);
+    map.__erdViewportFrame = frame;
+    updateMinimapViewport();
   }
 
   E.updateMinimap = renderMinimap;
@@ -257,9 +363,6 @@
     };
     map.addEventListener('pointerup', finish, true);
     map.addEventListener('pointercancel', finish, true);
-
-    // editor-core has the original click-to-center listener. Stop that legacy
-    // handler so the viewport-aware coordinate system is the single source.
     map.addEventListener('click', event => {
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -268,11 +371,50 @@
 
   const baseRender = window.renderView;
   window.renderView = function(viewKey) {
-    detached.clear();
-    baseRender(viewKey);
+    const view = schemaData[viewKey];
+    if (!view || (view.tables?.length || 0) < THRESHOLD) {
+      virtualViewKey = null;
+      virtualIds = new Set();
+      baseRender(viewKey);
+      requestAnimationFrame(() => {
+        A.renderCanvasExtras?.();
+        A.decorateRelations?.();
+        renderMinimap();
+        updateCullingStatus(view?.tables?.length || 0, view?.tables?.length || 0);
+      });
+      return;
+    }
+
+    ensureTableLayout(view);
+    currentView = viewKey;
+    const candidates = scopedTables(view);
+    const camera = cameraForTables(candidates.length ? candidates : view.tables);
+    const targetTables = visibleTables(view, camera);
+    const fullTables = view.tables;
+    const initialTables = targetTables.length ? targetTables : candidates.slice(0, 1);
+
+    view.tables = initialTables;
+    try {
+      baseRender(viewKey);
+    } finally {
+      view.tables = fullTables;
+    }
+
+    panX = camera.panX;
+    panY = camera.panY;
+    scale = camera.scale;
+    canvasLayer.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+    const zoomText = document.getElementById('zoom-text');
+    if (zoomText) zoomText.innerText = `${Math.round(scale * 100)}%`;
+    virtualViewKey = viewKey;
+    virtualIds = new Set(initialTables.map(E.tableId));
+    updateCullingStatus(virtualIds.size, candidates.length);
+
     requestAnimationFrame(() => {
       A.renderCanvasExtras?.();
-      scheduleCull();
+      A.applyTableColors?.();
+      E.refreshSelection?.();
+      window.updateConnections?.();
       A.decorateRelations?.();
       renderMinimap();
     });
@@ -281,17 +423,17 @@
   const baseTransform = window.applyTransform;
   window.applyTransform = function() {
     baseTransform();
-    scheduleCull();
-    renderMinimap();
+    if ((A.view()?.tables?.length || 0) >= THRESHOLD) scheduleCull();
+    updateMinimapViewport();
   };
 
   const baseSearch = window.handleSearch;
   window.handleSearch = function() {
     if ((A.view()?.tables?.length || 0) < THRESHOLD) return baseSearch();
     const query = document.getElementById('search-input').value.toLowerCase().trim();
-    A.view().tables.forEach(table => {
-      const card = getCard(E.tableId(table));
-      if (!card) return;
+    cardsContainer.querySelectorAll('.table-card').forEach(card => {
+      const table = E.findTable(card.id.replace(/^card-/, ''));
+      if (!table) return;
       const match = table.name.toLowerCase().includes(query)
         || (table.desc && table.desc.toLowerCase().includes(query))
         || table.columns.some(column => column.name.toLowerCase().includes(query));
@@ -303,12 +445,18 @@
     scheduleCull();
     renderMinimap();
   });
-  document.addEventListener('erd:project-scope-changed', () => requestAnimationFrame(renderMinimap));
+  document.addEventListener('erd:project-scope-changed', () => requestAnimationFrame(() => {
+    scheduleCull();
+    renderMinimap();
+  }));
   document.addEventListener('erd:project-areas-changed', () => requestAnimationFrame(renderMinimap));
-  document.addEventListener('erd:project-loaded', () => requestAnimationFrame(renderMinimap));
+  document.addEventListener('erd:project-loaded', () => requestAnimationFrame(() => {
+    scheduleCull();
+    renderMinimap();
+  }));
   document.addEventListener('click', event => {
     if (event.target.closest('[data-dock-toggle]') || event.target.closest('[onclick*="toggleInspector"]')) {
-      requestAnimationFrame(() => requestAnimationFrame(renderMinimap));
+      requestAnimationFrame(() => requestAnimationFrame(updateMinimapViewport));
     }
   }, true);
 
