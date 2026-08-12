@@ -1,5 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import projectManifest from '../projects/manifest.json'
 import './index.css'
 import '../editor-project.css'
 import '../editor-project-dock-ux.css'
@@ -8,6 +9,18 @@ import '../editor-join-style.css'
 import '../editor-workspace.css'
 import '../editor-desktop-shell.css'
 import '../editor-welcome.css'
+
+const projectDefinitionModules = import.meta.glob('../projects/*.project.json', {
+  eager: true,
+  import: 'default'
+})
+
+window.ERDSourceProjects = {
+  manifest: projectManifest,
+  definitions: Object.fromEntries(
+    Object.entries(projectDefinitionModules).map(([path, definition]) => [path.split('/').pop(), definition])
+  )
+}
 
 // Legacy ERD modules are still classic scripts. Load project extensions in
 // dependency order after the parser has executed the legacy editor scripts.
