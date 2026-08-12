@@ -1,4 +1,4 @@
-/** Drag UX: suppress drag-clicks and use local spatial collision checks for large ERDs. */
+/** Drag UX: suppress drag-clicks and resolve large-ERD drops without moving neighboring tables. */
 (() => {
   'use strict';
 
@@ -11,7 +11,8 @@
   const HEADER_HEIGHT = 60;
   const COLUMN_HEIGHT = 34;
   const MIN_GAP = 60;
-  const MAX_LOCAL_ITERATIONS = 2;
+  const SEARCH_STEP = 80;
+  const MAX_SEARCH_RINGS = 12;
   const originalStartDrag = window.startDragCard;
   let suppressTableClickUntil = 0;
 
@@ -34,6 +35,13 @@
       right: x + CARD_WIDTH + gap,
       bottom: y + tableHeight(table) + gap
     };
+  }
+
+  function rectsOverlap(a, b) {
+    return a.left < b.right
+      && a.right > b.left
+      && a.top < b.bottom
+      && a.bottom > b.top;
   }
 
   function cellKeys(rect) {
@@ -91,55 +99,58 @@
     return { buckets, memberships, insert, remove, update, query };
   }
 
-  function resolveLocalCollisions(dragged, index) {
-    const touched = new Set();
-    for (let iteration = 0; iteration < MAX_LOCAL_ITERATIONS; iteration += 1) {
-      const dragWidth = CARD_WIDTH;
-      const dragHeight = tableHeight(dragged);
-      const dragCenterX = (Number(dragged.x) || 0) + dragWidth / 2;
-      const dragCenterY = (Number(dragged.y) || 0) + dragHeight / 2;
-      const nearby = index.query(tableRect(dragged, MIN_GAP));
-      let movedAny = false;
+  function positionIsFree(table, index) {
+    const ownRect = tableRect(table, MIN_GAP / 2);
+    const nearby = index.query(tableRect(table, MIN_GAP));
+    return !nearby.some(other => rectsOverlap(ownRect, tableRect(other, MIN_GAP / 2)));
+  }
 
-      nearby.forEach(other => {
-        if (!other || other === dragged) return;
-        const otherWidth = CARD_WIDTH;
-        const otherHeight = tableHeight(other);
-        const otherCenterX = (Number(other.x) || 0) + otherWidth / 2;
-        const otherCenterY = (Number(other.y) || 0) + otherHeight / 2;
-        const dx = otherCenterX - dragCenterX;
-        const dy = otherCenterY - dragCenterY;
-        const overlapX = (dragWidth / 2 + otherWidth / 2 + MIN_GAP) - Math.abs(dx);
-        const overlapY = (dragHeight / 2 + otherHeight / 2 + MIN_GAP) - Math.abs(dy);
-
-        if (overlapX <= 0 || overlapY <= 0) return;
-
-        if (overlapX < overlapY) {
-          other.x = (Number(other.x) || 0) + (dx === 0 ? 1 : Math.sign(dx)) * overlapX;
-        } else {
-          other.y = (Number(other.y) || 0) + (dy === 0 ? 1 : Math.sign(dy)) * overlapY;
-        }
-
-        index.update(other);
-        touched.add(tableId(other));
-        const otherCard = document.getElementById(`card-${tableId(other)}`);
-        if (otherCard) {
-          otherCard.style.left = `${other.x}px`;
-          otherCard.style.top = `${other.y}px`;
-        }
-        movedAny = true;
-      });
-
-      if (!movedAny) break;
+  function perimeterOffsets(ring) {
+    const offsets = [];
+    for (let x = -ring; x <= ring; x += 1) {
+      offsets.push([x, -ring], [x, ring]);
     }
-    return touched;
+    for (let y = -ring + 1; y <= ring - 1; y += 1) {
+      offsets.push([-ring, y], [ring, y]);
+    }
+    return offsets;
+  }
+
+  function findNearestFreePosition(dragged, index, fallback = null) {
+    const desired = { x: Number(dragged.x) || 0, y: Number(dragged.y) || 0 };
+    if (positionIsFree(dragged, index)) return { ...desired, adjusted: false };
+
+    const probe = { ...dragged };
+    for (let ring = 1; ring <= MAX_SEARCH_RINGS; ring += 1) {
+      const offsets = perimeterOffsets(ring);
+      for (const [ox, oy] of offsets) {
+        probe.x = desired.x + ox * SEARCH_STEP;
+        probe.y = desired.y + oy * SEARCH_STEP;
+        if (positionIsFree(probe, index)) {
+          return { x: probe.x, y: probe.y, adjusted: true };
+        }
+      }
+    }
+
+    if (fallback) {
+      probe.x = fallback.x;
+      probe.y = fallback.y;
+      if (positionIsFree(probe, index)) {
+        return { x: probe.x, y: probe.y, adjusted: true, reverted: true };
+      }
+    }
+
+    // Imported layouts should normally be repaired before interaction. If no
+    // nearby free slot exists, preserve the user's requested drop rather than
+    // mutating any neighboring table.
+    return { ...desired, adjusted: false, unresolved: true };
   }
 
   function isLargeSchema(view) {
     return (view?.tables?.length || 0) >= LARGE_SCHEMA_THRESHOLD;
   }
 
-  function trackLegacyDrag(event, tableId) {
+  function trackLegacyDrag(event, tableIdValue) {
     const startX = event.clientX;
     const startY = event.clientY;
     let moved = false;
@@ -159,7 +170,7 @@
 
     window.addEventListener('mousemove', trackMove, true);
     window.addEventListener('mouseup', finishDrag, true);
-    return originalStartDrag.call(this, event, tableId);
+    return originalStartDrag.call(this, event, tableIdValue);
   }
 
   function startLargeDrag(event, tableIdValue, view) {
@@ -170,8 +181,9 @@
 
     const startX = event.clientX;
     const startY = event.clientY;
-    const dragOffX = (event.clientX - panX) / scale - (Number(dragged.x) || 0);
-    const dragOffY = (event.clientY - panY) / scale - (Number(dragged.y) || 0);
+    const startPosition = { x: Number(dragged.x) || 0, y: Number(dragged.y) || 0 };
+    const dragOffX = (event.clientX - panX) / scale - startPosition.x;
+    const dragOffY = (event.clientY - panY) / scale - startPosition.y;
     const index = createSpatialIndex(view.tables, tableIdValue);
     let latestMove = null;
     let moveFrame = 0;
@@ -193,8 +205,6 @@
       dragged.y = (moveEvent.clientY - panY) / scale - dragOffY;
       card.style.left = `${dragged.x}px`;
       card.style.top = `${dragged.y}px`;
-
-      resolveLocalCollisions(dragged, index);
       window.updateConnections?.();
     }
 
@@ -216,12 +226,25 @@
 
       if (!moved) return;
       suppressTableClickUntil = performance.now() + CLICK_SUPPRESS_MS;
+
+      const resolved = findNearestFreePosition(dragged, index, startPosition);
+      dragged.x = resolved.x;
+      dragged.y = resolved.y;
+      card.style.left = `${dragged.x}px`;
+      card.style.top = `${dragged.y}px`;
+
       E.persist?.();
       E.Performance?.invalidateSpatialIndex?.();
       E.Performance?.scheduleCull?.();
       E.updateMinimap?.();
+      window.updateConnections?.();
       document.dispatchEvent(new CustomEvent('erd:table-position-changed', {
-        detail: { tableId: tableIdValue, schemaKey: currentView }
+        detail: {
+          tableId: tableIdValue,
+          schemaKey: currentView,
+          collisionAdjusted: !!resolved.adjusted,
+          collisionUnresolved: !!resolved.unresolved
+        }
       }));
     }
 
@@ -235,8 +258,6 @@
     return startLargeDrag(event, tableIdValue, view);
   };
 
-  // Capture at window level so legacy/card click handlers never see the
-  // synthetic click that browsers dispatch immediately after a drag mouseup.
   window.addEventListener('click', event => {
     if (performance.now() > suppressTableClickUntil) return;
     if (!event.target.closest?.('.table-card')) return;
@@ -249,9 +270,11 @@
   E.LargeDragUX = {
     threshold: LARGE_SCHEMA_THRESHOLD,
     tableRect,
+    rectsOverlap,
     cellKeys,
     createSpatialIndex,
-    resolveLocalCollisions,
+    positionIsFree,
+    findNearestFreePosition,
     isLargeSchema
   };
 })();
