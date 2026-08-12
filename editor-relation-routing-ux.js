@@ -15,6 +15,23 @@
   const centerX = rect => rect.left + rect.width / 2;
   const centerY = rect => rect.top + rect.height / 2;
 
+  function readCanvasScale(canvasLayer) {
+    const inline = canvasLayer?.style?.transform || '';
+    const inlineMatch = inline.match(/scale\(([-+]?\d*\.?\d+)\)/);
+    if (inlineMatch) return Math.max(Number(inlineMatch[1]) || 1, 0.05);
+
+    const transform = canvasLayer ? getComputedStyle(canvasLayer).transform : 'none';
+    if (transform && transform !== 'none') {
+      const matrix = transform.match(/^matrix\(([^)]+)\)$/);
+      if (matrix) {
+        const [a, b] = matrix[1].split(',').map(Number);
+        const scale = Math.hypot(a || 0, b || 0);
+        if (scale > 0) return Math.max(scale, 0.05);
+      }
+    }
+    return 1;
+  }
+
   function gapForClearance(clearancePx) {
     if (!Number.isFinite(clearancePx) || clearancePx <= 0) return TARGET_GAP_PX;
     return Math.max(MIN_GAP_PX, Math.min(TARGET_GAP_PX, clearancePx * 0.28));
@@ -135,7 +152,7 @@
     if (!canvasLayer || !relations.length) return;
 
     const canvas = canvasLayer.getBoundingClientRect();
-    const scale = Number(window.scale) || 1;
+    const scale = readCanvasScale(canvasLayer);
 
     document.querySelectorAll('#connections-svg .connection-line').forEach(path => {
       const rel = relationForPath(path, relations);
@@ -164,7 +181,8 @@
   E.RelationRouting = {
     computeRoute,
     refine: refineRenderedConnections,
-    gapForClearance
+    gapForClearance,
+    readCanvasScale
   };
 
   tuneMarker();
