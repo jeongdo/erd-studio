@@ -7,6 +7,8 @@
   const Actions = E?.Actions;
   if (!E || !A || !Actions) return;
 
+  const VIRTUAL_THRESHOLD = 80;
+
   function tableId(table) {
     return E.tableId?.(table) || table?.id || table?.name || '';
   }
@@ -57,6 +59,15 @@
       .map(([key, count]) => ({ key, count }));
     const physicalOverlaps = E.ImportLayoutGuard?.physicalOverlapCount?.(tables) || 0;
     const unresolvedRelations = Array.isArray(sources?.unresolvedRelations) ? sources.unresolvedRelations.length : 0;
+    const projection = E.ViewProjection?.build?.(view) || {
+      projectedTableCount:tables.length,
+      projectedRelationCount:relations.length
+    };
+    const placeholderMode = E.TableVisibility?.placeholderMode?.() || (E.TableVisibility?.showPlaceholders?.() === false ? 'hidden' : 'full');
+    const mountedCards = typeof document !== 'undefined'
+      ? document.querySelectorAll?.('#cards-container .table-card')?.length || 0
+      : projection.projectedTableCount;
+    const rendererMode = projection.projectedTableCount >= VIRTUAL_THRESHOLD ? 'Viewport Virtualized' : 'Direct';
 
     return {
       totalTables: tables.length,
@@ -70,6 +81,11 @@
       missingTableRelations: missingTableRelations.length,
       missingColumnRelations: missingColumnRelations.length,
       unresolvedRelations,
+      placeholderMode,
+      projectedTables: projection.projectedTableCount,
+      projectedRelations: projection.projectedRelationCount,
+      mountedCards,
+      rendererMode,
       parallelPairs,
       issues: { missingTableRelations, missingColumnRelations }
     };
@@ -85,8 +101,10 @@
     const body = `
       <div class="manager-list">
         ${metric('전체 테이블', report.totalTables)}
-        ${metric('MyBatis 빈 참조 테이블', report.placeholderTables, '프로젝트에는 유지 · 보기에서 숨김 가능')}
+        ${metric('MyBatis 빈 참조 테이블', report.placeholderTables, `현재 ${report.placeholderMode} 모드`)}
         ${metric('컬럼 정의 테이블', report.definedTables)}
+        ${metric('Canvas Projection', `${report.projectedTables}/${report.totalTables}`, `${report.projectedRelations}/${report.relationCount} 관계`)}
+        ${metric('현재 DOM 카드', report.mountedCards, report.rendererMode)}
         ${metric('관계', report.relationCount)}
         ${metric('관계 참여 테이블', report.relationParticipantCount, 'Relation Focus 대상')}
         ${metric('다중 관계 테이블 쌍', report.parallelRelationPairs, `${report.parallelRelationEdges}개 관계선`)}
