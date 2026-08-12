@@ -62,16 +62,18 @@ function loadProjectLayer() {
                                   loadClassic('/editor-relation-router-v2.js', 'relation-router-v2', () => {
                                     loadClassic('/editor-relation-router-strategies.js', 'relation-router-strategies', () => {
                                       loadClassic('/editor-relation-port-selector.js', 'relation-port-selector', () => {
-                                        loadClassic('/editor-relation-router-modes.js', 'relation-router-modes', () => {
-                                          loadClassic('/editor-table-visibility.js', 'table-visibility', () => {
-                                            loadClassic('/editor-view-projection.js', 'view-projection', () => {
-                                              loadClassic('/editor-project-diagnostics.js', 'project-diagnostics', () => {
-                                                loadClassic('/editor-desktop-shell.js', 'desktop-shell', () => {
-                                                  loadClassic('/editor-relation-router-menu.js', 'relation-router-menu', () => {
-                                                    loadClassic('/editor-welcome.js', 'welcome', () => {
-                                                      loadClassic('/editor-responsive-ux.js', 'responsive-ux', () => {
-                                                        loadClassic('/editor-mybatis.js', 'mybatis', () => {
-                                                          loadClassic('/editor-ai-context.js', 'ai-context')
+                                        loadClassic('/editor-relation-fanout.js', 'relation-fanout', () => {
+                                          loadClassic('/editor-relation-router-modes.js', 'relation-router-modes', () => {
+                                            loadClassic('/editor-table-visibility.js', 'table-visibility', () => {
+                                              loadClassic('/editor-view-projection.js', 'view-projection', () => {
+                                                loadClassic('/editor-project-diagnostics.js', 'project-diagnostics', () => {
+                                                  loadClassic('/editor-desktop-shell.js', 'desktop-shell', () => {
+                                                    loadClassic('/editor-relation-router-menu.js', 'relation-router-menu', () => {
+                                                      loadClassic('/editor-welcome.js', 'welcome', () => {
+                                                        loadClassic('/editor-responsive-ux.js', 'responsive-ux', () => {
+                                                          loadClassic('/editor-mybatis.js', 'mybatis', () => {
+                                                            loadClassic('/editor-ai-context.js', 'ai-context')
+                                                          })
                                                         })
                                                       })
                                                     })
