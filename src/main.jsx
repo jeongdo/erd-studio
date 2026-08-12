@@ -22,6 +22,7 @@ function loadClassic(src, marker, onload) {
 
 function loadProjectLayer() {
   loadClassic('/editor-drag-ux.js', 'drag-ux')
+  loadClassic('/editor-header-ux.js', 'header-ux')
   loadClassic('/editor-project.js', 'project', () => {
     loadClassic('/editor-project-dock.js', 'project-dock', () => {
       loadClassic('/editor-project-dock-ux.js', 'project-dock-ux', () => {
