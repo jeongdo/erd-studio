@@ -30,6 +30,9 @@ function loadProjection({ visibleIds = null, areaIds = null } = {}) {
   let refreshed = 0
   const listeners = new Map()
   const selectedIds = new Set(['T_0','T_600'])
+  const frames = []
+  const cancelled = new Set()
+  let frameId = 0
 
   const E = {
     tableId: table => table.id || table.name,
@@ -54,8 +57,8 @@ function loadProjection({ visibleIds = null, areaIds = null } = {}) {
     currentView:'main',
     schemaData:{ main:schema },
     renderView() { rendered += 1 },
-    requestAnimationFrame(fn) { fn(); return 1 },
-    cancelAnimationFrame() {},
+    requestAnimationFrame(fn) { const id=++frameId; frames.push({ id, fn }); return id },
+    cancelAnimationFrame(id) { cancelled.add(id) },
     CustomEvent:class { constructor(type, init) { this.type=type; this.detail=init?.detail } },
     document:{
       addEventListener(type, fn) { listeners.set(type, fn) },
@@ -68,7 +71,17 @@ function loadProjection({ visibleIds = null, areaIds = null } = {}) {
   context.window = context
   context.window.ERDEditor = E
   vm.runInNewContext(read('editor-view-projection.js'), context, { filename:'editor-view-projection.js' })
-  return { E, schema, listeners, get rendered(){ return rendered }, get refreshed(){ return refreshed } }
+
+  const flushFrames = () => {
+    let guard = 0
+    while (frames.length && guard++ < 20) {
+      const batch = frames.splice(0)
+      batch.forEach(frame => { if (!cancelled.has(frame.id)) frame.fn() })
+    }
+    assert.ok(guard < 20, 'projection animation frames should settle')
+  }
+
+  return { E, schema, listeners, flushFrames, get rendered(){ return rendered }, get refreshed(){ return refreshed } }
 }
 
 test('projection reduces canvas candidates without mutating 687-table project data', () => {
@@ -96,14 +109,29 @@ test('subject area intersects visibility projection instead of deleting tables',
   assert.equal(runtime.schema.tables.length, 687)
 })
 
-test('projection refresh removes hidden selection and rerenders once', () => {
+test('persisted projection is applied on startup', () => {
   const visible = new Set(['T_0','T_1'])
   const runtime = loadProjection({ visibleIds:visible })
+  assert.equal(runtime.rendered, 0)
+  runtime.flushFrames()
+  assert.equal(runtime.rendered, 1)
+  assert.deepEqual([...runtime.E.selectedIds], ['T_0'])
+})
+
+test('projection refresh removes newly hidden selection and rerenders once', () => {
+  const visible = new Set(['T_0','T_1'])
+  const runtime = loadProjection({ visibleIds:visible })
+  runtime.flushFrames()
+  runtime.E.selectedIds.add('T_600')
+  const beforeRendered = runtime.rendered
+  const beforeRefreshed = runtime.refreshed
+
   runtime.E.ViewProjection.refresh()
+  runtime.flushFrames()
 
   assert.deepEqual([...runtime.E.selectedIds], ['T_0'])
-  assert.equal(runtime.refreshed, 1)
-  assert.equal(runtime.rendered, 1)
+  assert.equal(runtime.refreshed, beforeRefreshed + 1)
+  assert.equal(runtime.rendered, beforeRendered + 1)
 })
 
 test('projection reacts to subject-area lifecycle changes', () => {
@@ -123,4 +151,20 @@ test('projection layer loads after visibility and before diagnostics', () => {
 test('visibility toggles request projection rerender when projection is available', () => {
   const source = read('editor-table-visibility.js')
   assert.match(source, /E\.ViewProjection\?\.refresh/)
+})
+
+test('large renderer consumes projection candidates for render, culling, search and minimap', () => {
+  const source = read('editor-performance.js')
+  assert.match(source, /E\.ViewProjection\?\.tables\?\.\(view, currentView\)/)
+  assert.match(source, /const candidates = scopedTables\(view\)/)
+  assert.match(source, /if \(candidates\.length < THRESHOLD\)/)
+  assert.match(source, /view\.tables = candidates/)
+  assert.match(source, /scopedTables\(view\)\.length >= THRESHOLD/)
+  assert.match(source, /const tables = view \? scopedTables\(view\) : \[\]/)
+})
+
+test('projection-first scripts parse as JavaScript', () => {
+  for (const file of ['editor-view-projection.js','editor-table-visibility.js','editor-performance.js']) {
+    assert.doesNotThrow(() => new vm.Script(read(file), { filename:file }))
+  }
 })
