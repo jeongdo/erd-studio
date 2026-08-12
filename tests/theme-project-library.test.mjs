@@ -60,17 +60,21 @@ test('source project folder exposes Oracle default and Performance 300', () => {
   assert.deepEqual(performance.schemas.map(schema => schema.sampleId), ['performance_300'])
 })
 
-test('project open routes through source project chooser and keeps local file fallback', () => {
+test('Vite bundles source project definitions before project library loads', () => {
+  const main = read('src/main.jsx')
   const library = read('editor-project-library.js')
   const actions = read('editor-actions.js')
-  const main = read('src/main.jsx')
 
-  assert.match(library, /\/projects\/manifest\.json/)
+  assert.match(main, /import projectManifest from '\.\.\/projects\/manifest\.json'/)
+  assert.match(main, /import\.meta\.glob\('\.\.\/projects\/\*\.project\.json'/)
+  assert.match(main, /window\.ERDSourceProjects/)
+  assert.ok(main.indexOf("'/editor-project-library.js'") < main.indexOf("'/editor-actions.js'"))
+
+  assert.match(library, /window\.ERDSourceProjects/)
   assert.match(library, /W\.openLocalProjectFile = originalOpenLocalFile/)
   assert.match(library, /W\.openProjectFile = openProjectLibrary/)
   assert.match(library, /내 파일에서 열기/)
   assert.match(actions, /P\.Workspace\?\.openProjectFile/)
-  assert.ok(main.indexOf("'/editor-project-library.js'") < main.indexOf("'/editor-actions.js'"))
 })
 
 test('theme and project library scripts parse as JavaScript', () => {
