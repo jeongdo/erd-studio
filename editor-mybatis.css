@@ -1,0 +1,27 @@
+/* MyBatis source scanner */
+.mybatis-import-intro {
+  display:flex;align-items:flex-start;gap:12px;padding:12px 13px;border:1px solid var(--panel-border);
+  border-radius:10px;background:rgba(56,189,248,.06);
+}
+.mybatis-import-intro > i { color:var(--accent-blue);font-size:1.1rem;margin-top:2px; }
+.mybatis-import-intro div { display:grid;gap:4px; }
+.mybatis-import-intro strong { font-size:.8rem; }
+.mybatis-import-intro small,.mybatis-import-note { color:var(--text-muted);font-size:.69rem;line-height:1.5; }
+.checkbox-field > label { display:flex;align-items:center;gap:7px;min-height:38px;color:var(--text-main);font-size:.76rem; }
+.checkbox-field input { width:auto; }
+.mybatis-import-actions { display:flex;gap:8px;flex-wrap:wrap; }
+.mybatis-import-actions .editor-btn i { margin-right:6px; }
+.mybatis-import-note { padding:9px 11px;border-left:3px solid var(--accent-amber);background:rgba(251,191,36,.05); }
+.mybatis-index-summary { display:grid;grid-template-columns:repeat(4,1fr);gap:8px; }
+.mybatis-index-summary span { display:grid;gap:2px;padding:11px;border:1px solid var(--panel-border);border-radius:9px;background:rgba(30,41,59,.38); }
+.mybatis-index-summary b { color:var(--accent-blue);font:800 1rem 'Fira Code',monospace; }
+.mybatis-index-summary small { color:var(--text-muted);font-size:.63rem;text-transform:uppercase; }
+.mybatis-index-list { max-height:50vh;overflow:auto; }
+.mybatis-index-row {
+  width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 11px;
+  border:1px solid transparent;border-radius:7px;background:transparent;color:var(--text-main);cursor:pointer;text-align:left;
+}
+.mybatis-index-row:hover { border-color:var(--panel-border);background:rgba(56,189,248,.08); }
+.mybatis-index-row strong { font:600 .75rem 'Fira Code',monospace; }
+.mybatis-index-row span { color:var(--text-muted);font-size:.68rem;white-space:nowrap; }
+@media(max-width:720px){.mybatis-index-summary{grid-template-columns:repeat(2,1fr)}}
