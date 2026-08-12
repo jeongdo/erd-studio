@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import './index.css'
 import '../editor-project.css'
+import '../editor-project-dock-ux.css'
 import '../editor-mybatis.css'
 import '../editor-performance-tab.css'
 
@@ -22,9 +23,11 @@ function loadClassic(src, marker, onload) {
 function loadProjectLayer() {
   loadClassic('/editor-project.js', 'project', () => {
     loadClassic('/editor-project-dock.js', 'project-dock', () => {
-      loadClassic('/editor-mybatis.js', 'mybatis', () => {
-        loadClassic('/editor-ai-context.js', 'ai-context', () => {
-          loadClassic('/editor-performance-tab.js', 'performance-tab')
+      loadClassic('/editor-project-dock-ux.js', 'project-dock-ux', () => {
+        loadClassic('/editor-mybatis.js', 'mybatis', () => {
+          loadClassic('/editor-ai-context.js', 'ai-context', () => {
+            loadClassic('/editor-performance-tab.js', 'performance-tab')
+          })
         })
       })
     })
