@@ -3,6 +3,22 @@
   "version": 1,
   "projects": [
     {
+      "id": "sei_fm_master",
+      "name": "SEI FMCS 원본 Master 프로젝트",
+      "description": "SEI FMCS 9대 공종 및 프레임워크 전역 원본 스키마 (687개 테이블)",
+      "dbms": "oracle",
+      "icon": "fa-solid fa-layer-group",
+      "file": "sei_fm_master.project.json"
+    },
+    {
+      "id": "analysis_20260812",
+      "name": "SEI FMCS 도메인 분석 프로젝트 (2026-08-12)",
+      "description": "9대 공종 신규 비즈니스 필드 & 사진 판독 테이블 반영 개정 프로젝트 (693개 테이블)",
+      "dbms": "oracle",
+      "icon": "fa-solid fa-chart-diagram",
+      "file": "analysis_20260812.project.json"
+    },
+    {
       "id": "oracle-default",
       "name": "Oracle 기본 예제",
       "description": "Oracle HR + SCOTT 기본 프로젝트",

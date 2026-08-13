@@ -1,0 +1,1643 @@
+{
+  "format": "erd-studio-project",
+  "version": 1,
+  "exportedAt": "2026-08-13T22:45:30.430Z",
+  "project": {
+    "id": "spool-rfi-confirm-20260814",
+    "description": "2026-08-14 ERD Studio portable 단일 파일. 사진·SQL 기반 Spool RFI Confirm 최소 12-table 논리 모델. 주석의 미확정 물리명은 최신 DB 확인 필요.",
+    "dbms": "oracle",
+    "createdAt": "2026-08-13T20:30:00+09:00",
+    "updatedAt": "2026-08-13T22:45:30.430Z",
+    "name": "SEI FMCS Spool RFI Confirm (2026-08-14)"
+  },
+  "schemas": {
+    "FMCS": {
+      "tabName": "FMCS",
+      "icon": "fa-solid fa-database",
+      "title": "Spool RFI Confirm · FMCS (2026-08-14)",
+      "description": "논리관계는 2026-08-13 화면 SQL의 조인 기준이며 실제 DB FK 제약조건을 의미하지 않는다.",
+      "tables": [
+        {
+          "id": "ALL_SPOOL_DWG_INFO",
+          "name": "ALL_SPOOL_DWG_INFO",
+          "desc": "Spool 복합키와 ISO Drawing/Line/Sheet 정보를 연결하는 도면 매핑.",
+          "x": 520,
+          "y": 20,
+          "columns": [
+            {
+              "name": "JOB_NO",
+              "type": "VARCHAR2(30)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "SBNM",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "AREA",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "BOOK",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "DWG",
+              "type": "VARCHAR2(40)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "FLUID",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요. 사진 SQL 일부는 FLUD로 표기하나 논리 모델은 FLUID로 정규화."
+            },
+            {
+              "name": "LINE",
+              "type": "VARCHAR2(40)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "SPOOL_NO",
+              "type": "VARCHAR2(40)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "UNIT",
+              "type": "VARCHAR2(20)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "ISO_DWG_NO",
+              "type": "VARCHAR2(80)",
+              "pk": false,
+              "fk": false,
+              "notNull": true,
+              "comment": ""
+            },
+            {
+              "name": "ISO_LINE_NO",
+              "type": "VARCHAR2(80)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "ISO_SHEET_NO",
+              "type": "VARCHAR2(30)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "LISO_TOT_SHEET_NO",
+              "type": "NUMBER",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "STD_REV_NO",
+              "type": "VARCHAR2(20)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "SPOOL_REV_NO",
+              "type": "VARCHAR2(20)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "DWG_MGMT_ID",
+              "type": "VARCHAR2(60)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "SPOOL_DWG_MGMT_ID",
+              "type": "VARCHAR2(60)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "AVAILABLE_YN",
+              "type": "CHAR(1)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "DELETE_YN",
+              "type": "CHAR(1)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "DELETE_DATE",
+              "type": "DATE",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "EWP_FINAL_GUBUN",
+              "type": "VARCHAR2(20)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            }
+          ]
+        },
+        {
+          "id": "ENA2_PP_BO_PAIN_MATL_MST",
+          "name": "ENA2_PP_BO_PAIN_MATL_MST",
+          "desc": "Paint별 Primer/Intermediate/Final/Tie-Coat 적용 여부를 계산하는 최신 재료 마스터.",
+          "x": 1020,
+          "y": 900,
+          "columns": [
+            {
+              "name": "PJT_NO",
+              "type": "VARCHAR2(30)",
+              "pk": true,
+              "fk": false,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "PAINT",
+              "type": "VARCHAR2(50)",
+              "pk": true,
+              "fk": false,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "PRIMER",
+              "type": "VARCHAR2(100)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "집계 후 PRIMER_YN 판정 원천."
+            },
+            {
+              "name": "INTRMDT",
+              "type": "VARCHAR2(100)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "집계 후 INTERMEDIATE_YN 판정 원천."
+            },
+            {
+              "name": "FCOAT",
+              "type": "VARCHAR2(100)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "집계 후 FINAL_YN 판정 원천."
+            },
+            {
+              "name": "TCOAT",
+              "type": "VARCHAR2(100)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "집계 후 TCOAT_YN 판정 원천."
+            }
+          ]
+        },
+        {
+          "id": "PM_CODE",
+          "name": "PM_CODE",
+          "desc": "공정 task 257071~257075와 PASPL1 업무구분.",
+          "x": 1020,
+          "y": 1500,
+          "columns": [
+            {
+              "name": "CODE_GROUP_KEY",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": false,
+              "notNull": true,
+              "comment": "Spool Paint RFI 공정 그룹은 257."
+            },
+            {
+              "name": "CODE_KEY",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": false,
+              "notNull": true,
+              "comment": "257071 Surface, 257072 Primer, 257073 Intermediate, 257074 Final, 257075 Tie-Coat."
+            },
+            {
+              "name": "CODE_NAME",
+              "type": "VARCHAR2(200)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "REMARK",
+              "type": "VARCHAR2(200)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "사진 SQL은 PASPL1 판별 컬럼으로 REMARK를 사용."
+            },
+            {
+              "name": "FLAG",
+              "type": "VARCHAR2(50)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "메모에는 PASPL1 판별 컬럼으로 FLAG가 기재됨. 실제 REMARK/FLAG 중 무엇인지 미확정."
+            },
+            {
+              "name": "USE_YN",
+              "type": "CHAR(1)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            }
+          ]
+        },
+        {
+          "id": "PM_N_SUBCON_MST",
+          "name": "PM_N_SUBCON_MST",
+          "desc": "공종별 Subcon 번호와 표시/Vendor 기준정보.",
+          "x": 20,
+          "y": 1500,
+          "columns": [
+            {
+              "name": "JOB_NO",
+              "type": "VARCHAR2(30)",
+              "pk": true,
+              "fk": false,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "GONGJONG_NAME",
+              "type": "VARCHAR2(40)",
+              "pk": true,
+              "fk": false,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "SUB_GONGJONG_NAME",
+              "type": "VARCHAR2(40)",
+              "pk": true,
+              "fk": false,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "SUBCON_NO",
+              "type": "VARCHAR2(30)",
+              "pk": true,
+              "fk": false,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "SUBCON_ID",
+              "type": "VARCHAR2(50)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "사진 SQL에서 확인. SCMS VENDOR_ID 매핑 후보."
+            },
+            {
+              "name": "SUBCON_NAME",
+              "type": "VARCHAR2(200)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "표시명 역할의 논리 컬럼. 실제 물리명은 최신 DB 확인 필요."
+            },
+            {
+              "name": "USE_YN",
+              "type": "CHAR(1)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            }
+          ]
+        },
+        {
+          "id": "PM_N_SUBCON_PI_DWG",
+          "name": "PM_N_SUBCON_PI_DWG",
+          "desc": "PAINTING/PIPING/SHOP Spool별 Subcon 배정. 확정본 명칭은 PI_DWG이나 구형 SQL은 PL_DWG를 사용.",
+          "x": 520,
+          "y": 1500,
+          "columns": [
+            {
+              "name": "AJOB_NO",
+              "type": "VARCHAR2(30)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요. 구형 PM_N_SUBCON_PL_DWG 사진 SQL의 A-prefixed 물리 컬럼 증거를 보존."
+            },
+            {
+              "name": "ASBNM",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "AAREA",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "ABOOK",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "ADWG",
+              "type": "VARCHAR2(40)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "AFLUID",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "사진 SQL의 AFLUID 기준. 다른 SCMS 사진의 FLUD 표기와 구분."
+            },
+            {
+              "name": "ALINE",
+              "type": "VARCHAR2(40)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "ASPOOL_NO",
+              "type": "VARCHAR2(40)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "GONGJONG_NAME",
+              "type": "VARCHAR2(40)",
+              "pk": false,
+              "fk": true,
+              "notNull": true,
+              "comment": ""
+            },
+            {
+              "name": "SUB_GONGJONG_NAME",
+              "type": "VARCHAR2(40)",
+              "pk": false,
+              "fk": true,
+              "notNull": true,
+              "comment": ""
+            },
+            {
+              "name": "SHOP_FIELD",
+              "type": "VARCHAR2(20)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "PAINTING/PIPING/SHOP 배정 구분."
+            },
+            {
+              "name": "SUBCON_NO",
+              "type": "VARCHAR2(30)",
+              "pk": false,
+              "fk": true,
+              "notNull": true,
+              "comment": ""
+            }
+          ]
+        },
+        {
+          "id": "PM_SCMS_RFI_DTL_T_SPOOL",
+          "name": "PM_SCMS_RFI_DTL_T_SPOOL",
+          "desc": "RFI revision과 여러 Spool을 연결하는 신규 상세.",
+          "x": 1520,
+          "y": 900,
+          "columns": [
+            {
+              "name": "PJT_NO",
+              "type": "VARCHAR2(30)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "RFI_REQ_ID",
+              "type": "VARCHAR2(50)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "RFI_REQ_REV",
+              "type": "NUMBER",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "ITEM_SEQ",
+              "type": "NUMBER",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "[미확정] 신규 상세의 item sequence 존재 여부와 실제 명칭/PK 포함 여부는 DB 확인 필요."
+            },
+            {
+              "name": "SBNM",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "AREA",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "BOOK",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "DWG",
+              "type": "VARCHAR2(40)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "FLUID",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "사진의 FLUD 표기는 논리 모델에서 FLUID로 정규화. 실제 물리명 확인 필요."
+            },
+            {
+              "name": "LINE",
+              "type": "VARCHAR2(40)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "SPOOL_NO",
+              "type": "VARCHAR2(40)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "ISO_DWG_NO",
+              "type": "VARCHAR2(80)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "CREATE_DATE",
+              "type": "DATE",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            }
+          ]
+        },
+        {
+          "id": "PM_SCMS_RFI_MST",
+          "name": "PM_SCMS_RFI_MST",
+          "desc": "공통 SCMS RFI 마스터. 요청 ID/revision/task/vendor와 SCMS 결과를 보유.",
+          "x": 1520,
+          "y": 20,
+          "columns": [
+            {
+              "name": "PJT_NO",
+              "type": "VARCHAR2(30)",
+              "pk": true,
+              "fk": false,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "RFI_REQ_ID",
+              "type": "VARCHAR2(50)",
+              "pk": true,
+              "fk": false,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "RFI_REQ_REV",
+              "type": "NUMBER",
+              "pk": true,
+              "fk": false,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "RFI_REQ_NO",
+              "type": "VARCHAR2(80)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "SCMS RFI No 표시 후보."
+            },
+            {
+              "name": "RFI_REQ_TYPE",
+              "type": "VARCHAR2(20)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "Spool Paint 공정 RFI는 PASPL1."
+            },
+            {
+              "name": "RFI_REQ_TASK",
+              "type": "VARCHAR2(20)",
+              "pk": false,
+              "fk": true,
+              "notNull": true,
+              "comment": "PM_CODE.CODE_KEY(257071~257075)."
+            },
+            {
+              "name": "VENDOR_ID",
+              "type": "VARCHAR2(50)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "Subcon 기준 SCMS vendor."
+            },
+            {
+              "name": "SCMS_STATUS",
+              "type": "VARCHAR2(50)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "[미확정 물리명] Issued/Accepted/Rejected/Cancelled/Owner Approved 상태 역할."
+            },
+            {
+              "name": "REPORT_NO",
+              "type": "VARCHAR2(80)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "[미확정 물리명] Owner 최종승인 결과."
+            },
+            {
+              "name": "QC_CONFIRM_DATE",
+              "type": "DATE",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "[미확정 물리명] QC Confirm Date."
+            },
+            {
+              "name": "QC_CONFIRM_BY",
+              "type": "VARCHAR2(100)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "[미확정 물리명] QC Confirm By."
+            },
+            {
+              "name": "DELETE_YN",
+              "type": "CHAR(1)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "전체 이력 요구상 논리삭제 후보. 실제 컬럼과 정책 미확정."
+            },
+            {
+              "name": "CREATE_DATE",
+              "type": "DATE",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "UPDATE_DATE",
+              "type": "DATE",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            }
+          ]
+        },
+        {
+          "id": "PM_T_SPOOL_ACTUAL",
+          "name": "PM_T_SPOOL_ACTUAL",
+          "desc": "PO별 Actual Paint Code와 5개 도장 공정 실적일. PO_ID를 포함한 이력 집약 대상.",
+          "x": 1020,
+          "y": 20,
+          "columns": [
+            {
+              "name": "JOB_NO",
+              "type": "VARCHAR2(30)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "PO_ID",
+              "type": "VARCHAR2(50)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요. Actual 1:N 이력 구분에 필요."
+            },
+            {
+              "name": "SUBCON_NO",
+              "type": "VARCHAR2(30)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "SBNM",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "AREA",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "BOOK",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "DWG",
+              "type": "VARCHAR2(40)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "FLUID",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요. 사진 SQL 일부는 FLUD로 표기하나 논리 모델은 FLUID로 정규화."
+            },
+            {
+              "name": "LINE",
+              "type": "VARCHAR2(40)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "SPOOL_NO",
+              "type": "VARCHAR2(40)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "PAINT",
+              "type": "VARCHAR2(50)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "Actual Paint Code."
+            },
+            {
+              "name": "SURFACE_PREP_DATE",
+              "type": "VARCHAR2(8)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "Surface Preparation 실적일(YYYYMMDD 논리 타입)."
+            },
+            {
+              "name": "PRIMER_DATE",
+              "type": "VARCHAR2(8)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "Primer 실적일."
+            },
+            {
+              "name": "INTER_DATE",
+              "type": "VARCHAR2(8)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "Intermediate 실적일."
+            },
+            {
+              "name": "FINAL_DATE",
+              "type": "VARCHAR2(8)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "Final 실적일."
+            },
+            {
+              "name": "TIE_COAT_DATE",
+              "type": "VARCHAR2(8)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "Tie-Coat 실적일. 2026-08-13 사진 SQL에서 확인."
+            },
+            {
+              "name": "PAINT_DOC_NO",
+              "type": "VARCHAR2(80)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "INSP_DATE",
+              "type": "VARCHAR2(8)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "PAINT_INSP_DOC_NO",
+              "type": "VARCHAR2(80)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "PAINT_QTY",
+              "type": "NUMBER",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "REMARK",
+              "type": "VARCHAR2(1000)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "CREATE_EMPNO",
+              "type": "VARCHAR2(30)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "CREATE_DATE",
+              "type": "DATE",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "UPDATE_EMPNO",
+              "type": "VARCHAR2(30)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "UPDATE_DATE",
+              "type": "DATE",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "최신 이력 순위 기준. 동률 해소 보조키는 미확정."
+            }
+          ]
+        },
+        {
+          "id": "PM_T_SPOOL_ORD_DTL",
+          "name": "PM_T_SPOOL_ORD_DTL",
+          "desc": "Paint PO와 Spool을 연결하고 초기/최신 Paint 및 상세 상태를 보유.",
+          "x": 520,
+          "y": 900,
+          "columns": [
+            {
+              "name": "JOB_NO",
+              "type": "VARCHAR2(30)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "PO_ID",
+              "type": "VARCHAR2(50)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "SBNM",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "AREA",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "BOOK",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "DWG",
+              "type": "VARCHAR2(40)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "FLUID",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요. 사진 SQL 일부는 FLUD로 표기하나 논리 모델은 FLUID로 정규화."
+            },
+            {
+              "name": "LINE",
+              "type": "VARCHAR2(40)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "SPOOL_NO",
+              "type": "VARCHAR2(40)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "PAINT_INIT",
+              "type": "VARCHAR2(50)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "PAINT_LATEST",
+              "type": "VARCHAR2(50)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "PO_DTL_STATUS",
+              "type": "VARCHAR2(20)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "CREATE_DATE",
+              "type": "DATE",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "UPDATE_DATE",
+              "type": "DATE",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            }
+          ]
+        },
+        {
+          "id": "PM_T_SPOOL_ORD_MST",
+          "name": "PM_T_SPOOL_ORD_MST",
+          "desc": "Paint PO와 Subcon 및 확정상태를 보유하는 주문 마스터.",
+          "x": 20,
+          "y": 900,
+          "columns": [
+            {
+              "name": "JOB_NO",
+              "type": "VARCHAR2(30)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "PO_ID",
+              "type": "VARCHAR2(50)",
+              "pk": true,
+              "fk": false,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "SUBCON_NO",
+              "type": "VARCHAR2(30)",
+              "pk": false,
+              "fk": true,
+              "notNull": true,
+              "comment": ""
+            },
+            {
+              "name": "PO_STATUS",
+              "type": "VARCHAR2(20)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "확정상태 역할의 논리 컬럼명. 실제 물리 컬럼명은 최신 DB 확인 필요."
+            },
+            {
+              "name": "CREATE_EMPNO",
+              "type": "VARCHAR2(30)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "CREATE_DATE",
+              "type": "DATE",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "UPDATE_EMPNO",
+              "type": "VARCHAR2(30)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "UPDATE_DATE",
+              "type": "DATE",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            }
+          ]
+        },
+        {
+          "id": "PM_T_SPOOL_SEARCH_UPLOAD",
+          "name": "PM_T_SPOOL_SEARCH_UPLOAD",
+          "desc": "JOB_NO+사용자별 대량 조회 조건 staging. 실적/RFI 결과를 저장하지 않음.",
+          "x": 1520,
+          "y": 1500,
+          "columns": [
+            {
+              "name": "JOB_NO",
+              "type": "VARCHAR2(30)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "UPLOAD_EMPNO",
+              "type": "VARCHAR2(30)",
+              "pk": true,
+              "fk": false,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "ISO_DWG_NO",
+              "type": "VARCHAR2(80)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "SPOOL_NO",
+              "type": "VARCHAR2(40)",
+              "pk": true,
+              "fk": true,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "SPOOL_CONTROL_NO",
+              "type": "VARCHAR2(80)",
+              "pk": true,
+              "fk": false,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "CREATE_DATE",
+              "type": "DATE",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "staging 정리 기준 후보."
+            }
+          ]
+        },
+        {
+          "id": "R0_P_SPOOL_MST",
+          "name": "R0_P_SPOOL_MST",
+          "desc": "Spool 기준 복합식별자, Paint Code 및 Spool Control No. 원천 모집단.",
+          "x": 20,
+          "y": 20,
+          "columns": [
+            {
+              "name": "JOB_NO",
+              "type": "VARCHAR2(30)",
+              "pk": true,
+              "fk": false,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "SBNM",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": false,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "AREA",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": false,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "BOOK",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": false,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "DWG",
+              "type": "VARCHAR2(40)",
+              "pk": true,
+              "fk": false,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "FLUID",
+              "type": "VARCHAR2(20)",
+              "pk": true,
+              "fk": false,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요. 사진 SQL 일부는 FLUD로 표기하나 논리 모델은 FLUID로 정규화."
+            },
+            {
+              "name": "LINE",
+              "type": "VARCHAR2(40)",
+              "pk": true,
+              "fk": false,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "SPOOL_NO",
+              "type": "VARCHAR2(40)",
+              "pk": true,
+              "fk": false,
+              "notNull": true,
+              "comment": "논리키(화면 SQL 식별 기준). 실제 DB PK/제약조건은 최신 DB에서 확인 필요."
+            },
+            {
+              "name": "PAINT",
+              "type": "VARCHAR2(50)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "Spool 기준 Paint Code."
+            },
+            {
+              "name": "SPOOL_CONTROL_NO",
+              "type": "VARCHAR2(80)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "대량 Search Template의 보조 식별자."
+            },
+            {
+              "name": "SHOP_DOC_NO",
+              "type": "VARCHAR2(60)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "SHOP_FAB_DATE",
+              "type": "VARCHAR2(8)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "원본 SQL의 문자열 날짜 사용을 반영한 논리 타입(YYYYMMDD 추정)."
+            },
+            {
+              "name": "SHOP_FAB_DATE_SPOOL",
+              "type": "VARCHAR2(8)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "원본 SQL 확인 컬럼. 날짜 저장형식은 최신 DB 확인 필요."
+            },
+            {
+              "name": "SHOP_ISS_DATE",
+              "type": "VARCHAR2(8)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "SHOP_LOC",
+              "type": "VARCHAR2(30)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": ""
+            },
+            {
+              "name": "S_SUBCON_NO",
+              "type": "VARCHAR2(30)",
+              "pk": false,
+              "fk": false,
+              "notNull": false,
+              "comment": "Spool master의 협력사 참조값. 실제 배정은 PI/PL DWG 및 PO와 함께 판정."
+            }
+          ]
+        }
+      ],
+      "relations": [
+        {
+          "from": "R0_P_SPOOL_MST",
+          "fromCol": [
+            "JOB_NO",
+            "SBNM",
+            "AREA",
+            "BOOK",
+            "DWG",
+            "FLUID",
+            "LINE",
+            "SPOOL_NO"
+          ],
+          "to": "ALL_SPOOL_DWG_INFO",
+          "toCol": [
+            "JOB_NO",
+            "SBNM",
+            "AREA",
+            "BOOK",
+            "DWG",
+            "FLUID",
+            "LINE",
+            "SPOOL_NO"
+          ],
+          "identifying": false,
+          "comment": "Spool 기준키로 ISO 도면 연결."
+        },
+        {
+          "from": "R0_P_SPOOL_MST",
+          "fromCol": [
+            "JOB_NO",
+            "SBNM",
+            "AREA",
+            "BOOK",
+            "DWG",
+            "FLUID",
+            "LINE",
+            "SPOOL_NO"
+          ],
+          "to": "PM_T_SPOOL_ORD_DTL",
+          "toCol": [
+            "JOB_NO",
+            "SBNM",
+            "AREA",
+            "BOOK",
+            "DWG",
+            "FLUID",
+            "LINE",
+            "SPOOL_NO"
+          ],
+          "identifying": false,
+          "comment": "Spool 모집단과 PO 상세 연결."
+        },
+        {
+          "from": "PM_T_SPOOL_ORD_MST",
+          "fromCol": [
+            "JOB_NO",
+            "PO_ID"
+          ],
+          "to": "PM_T_SPOOL_ORD_DTL",
+          "toCol": [
+            "JOB_NO",
+            "PO_ID"
+          ],
+          "identifying": false
+        },
+        {
+          "from": "PM_T_SPOOL_ORD_MST",
+          "fromCol": [
+            "JOB_NO",
+            "PO_ID",
+            "SUBCON_NO"
+          ],
+          "to": "PM_T_SPOOL_ACTUAL",
+          "toCol": [
+            "JOB_NO",
+            "PO_ID",
+            "SUBCON_NO"
+          ],
+          "identifying": false,
+          "comment": "Actual의 Subcon은 PO 마스터와 함께 검증."
+        },
+        {
+          "from": "PM_T_SPOOL_ORD_DTL",
+          "fromCol": [
+            "JOB_NO",
+            "PO_ID",
+            "SBNM",
+            "AREA",
+            "BOOK",
+            "DWG",
+            "FLUID",
+            "LINE",
+            "SPOOL_NO"
+          ],
+          "to": "PM_T_SPOOL_ACTUAL",
+          "toCol": [
+            "JOB_NO",
+            "PO_ID",
+            "SBNM",
+            "AREA",
+            "BOOK",
+            "DWG",
+            "FLUID",
+            "LINE",
+            "SPOOL_NO"
+          ],
+          "identifying": false,
+          "comment": "Actual 1:N 이력 연결. 최종 조회는 UPDATE_DATE와 확정 보조키로 최신행 집약 필요."
+        },
+        {
+          "from": "PM_N_SUBCON_MST",
+          "fromCol": [
+            "JOB_NO",
+            "SUBCON_NO"
+          ],
+          "to": "PM_T_SPOOL_ORD_MST",
+          "toCol": [
+            "JOB_NO",
+            "SUBCON_NO"
+          ],
+          "identifying": false
+        },
+        {
+          "from": "PM_N_SUBCON_MST",
+          "fromCol": [
+            "JOB_NO",
+            "GONGJONG_NAME",
+            "SUB_GONGJONG_NAME",
+            "SUBCON_NO"
+          ],
+          "to": "PM_N_SUBCON_PI_DWG",
+          "toCol": [
+            "AJOB_NO",
+            "GONGJONG_NAME",
+            "SUB_GONGJONG_NAME",
+            "SUBCON_NO"
+          ],
+          "identifying": false
+        },
+        {
+          "from": "R0_P_SPOOL_MST",
+          "fromCol": [
+            "JOB_NO",
+            "SBNM",
+            "AREA",
+            "BOOK",
+            "DWG",
+            "FLUID",
+            "LINE",
+            "SPOOL_NO"
+          ],
+          "to": "PM_N_SUBCON_PI_DWG",
+          "toCol": [
+            "AJOB_NO",
+            "ASBNM",
+            "AAREA",
+            "ABOOK",
+            "ADWG",
+            "AFLUID",
+            "ALINE",
+            "ASPOOL_NO"
+          ],
+          "identifying": false,
+          "comment": "확정본은 PI_DWG, 구형 SQL은 PL_DWG. 테이블명은 추가 확인 필요."
+        },
+        {
+          "from": "PM_CODE",
+          "fromCol": [
+            "CODE_KEY"
+          ],
+          "to": "PM_SCMS_RFI_MST",
+          "toCol": [
+            "RFI_REQ_TASK"
+          ],
+          "identifying": false,
+          "comment": "CODE_GROUP_KEY=257 및 PASPL1 조건은 조회 필터로 적용."
+        },
+        {
+          "from": "PM_SCMS_RFI_MST",
+          "fromCol": [
+            "PJT_NO",
+            "RFI_REQ_ID",
+            "RFI_REQ_REV"
+          ],
+          "to": "PM_SCMS_RFI_DTL_T_SPOOL",
+          "toCol": [
+            "PJT_NO",
+            "RFI_REQ_ID",
+            "RFI_REQ_REV"
+          ],
+          "identifying": false
+        },
+        {
+          "from": "R0_P_SPOOL_MST",
+          "fromCol": [
+            "JOB_NO",
+            "SBNM",
+            "AREA",
+            "BOOK",
+            "DWG",
+            "FLUID",
+            "LINE",
+            "SPOOL_NO"
+          ],
+          "to": "PM_SCMS_RFI_DTL_T_SPOOL",
+          "toCol": [
+            "PJT_NO",
+            "SBNM",
+            "AREA",
+            "BOOK",
+            "DWG",
+            "FLUID",
+            "LINE",
+            "SPOOL_NO"
+          ],
+          "identifying": false,
+          "comment": "사진 SQL의 FLUD는 FLUID로 정규화."
+        },
+        {
+          "from": "ALL_SPOOL_DWG_INFO",
+          "fromCol": [
+            "JOB_NO",
+            "ISO_DWG_NO",
+            "SPOOL_NO"
+          ],
+          "to": "PM_T_SPOOL_SEARCH_UPLOAD",
+          "toCol": [
+            "JOB_NO",
+            "ISO_DWG_NO",
+            "SPOOL_NO"
+          ],
+          "identifying": false,
+          "comment": "업로드는 조회 필터이며 Actual/RFI를 갱신하지 않음."
+        },
+        {
+          "from": "ENA2_PP_BO_PAIN_MATL_MST",
+          "fromCol": [
+            "PJT_NO",
+            "PAINT"
+          ],
+          "to": "R0_P_SPOOL_MST",
+          "toCol": [
+            "JOB_NO",
+            "PAINT"
+          ],
+          "identifying": false,
+          "comment": "Paint별 적용 공정 판단."
+        },
+        {
+          "from": "ENA2_PP_BO_PAIN_MATL_MST",
+          "fromCol": [
+            "PJT_NO",
+            "PAINT"
+          ],
+          "to": "PM_T_SPOOL_ACTUAL",
+          "toCol": [
+            "JOB_NO",
+            "PAINT"
+          ],
+          "identifying": false,
+          "comment": "Actual Paint Code의 5개 공정 적용 여부 계산."
+        }
+      ]
+    }
+  },
+  "areas": [
+    {
+      "id": "area-spool-base",
+      "name": "Spool 모집단",
+      "description": "Spool, 도면, PO, Actual, Subcon 배정",
+      "schemaKey": "FMCS",
+      "tableIds": [
+        "R0_P_SPOOL_MST",
+        "ALL_SPOOL_DWG_INFO",
+        "PM_T_SPOOL_ACTUAL",
+        "PM_T_SPOOL_ORD_MST",
+        "PM_T_SPOOL_ORD_DTL",
+        "PM_N_SUBCON_MST",
+        "PM_N_SUBCON_PI_DWG",
+        "ENA2_PP_BO_PAIN_MATL_MST"
+      ],
+      "color": "#2563eb",
+      "source": "manual",
+      "createdAt": "2026-08-13T20:30:00+09:00",
+      "updatedAt": "2026-08-13T22:45:30.430Z"
+    },
+    {
+      "id": "area-rfi",
+      "name": "SCMS RFI",
+      "description": "공정 코드, RFI 마스터와 Spool 상세",
+      "schemaKey": "FMCS",
+      "tableIds": [
+        "PM_CODE",
+        "PM_SCMS_RFI_MST",
+        "PM_SCMS_RFI_DTL_T_SPOOL"
+      ],
+      "color": "#dc2626",
+      "source": "manual",
+      "createdAt": "2026-08-13T20:30:00+09:00",
+      "updatedAt": "2026-08-13T22:45:30.430Z"
+    },
+    {
+      "id": "area-search",
+      "name": "Search Template",
+      "description": "사용자별 대량 검색 staging",
+      "schemaKey": "FMCS",
+      "tableIds": [
+        "ALL_SPOOL_DWG_INFO",
+        "PM_T_SPOOL_SEARCH_UPLOAD"
+      ],
+      "color": "#059669",
+      "source": "manual",
+      "createdAt": "2026-08-13T20:30:00+09:00",
+      "updatedAt": "2026-08-13T22:45:30.430Z"
+    }
+  ],
+  "activeAreaBySchema": {
+    "FMCS": null
+  },
+  "sources": {
+    "mybatis": {
+      "importedAt": null,
+      "schemaKey": null,
+      "files": [],
+      "statements": [],
+      "tableUsage": {}
+    },
+    "mybatisIndexes": {}
+  }
+}
