@@ -2,7 +2,7 @@ name: ci
 
 on:
   push:
-    branches: [main]
+    branches: [main, agent/folder-projects]
   pull_request:
 
 jobs:
