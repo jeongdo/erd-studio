@@ -48,32 +48,35 @@ function loadProjectLayer() {
           loadClassic('/editor-workspace.js', 'workspace', () => {
             loadClassic('/editor-folder-project.js', 'folder-project', () => {
               loadClassic('/editor-import-layout-guard.js', 'import-layout-guard', () => {
-              loadClassic('/editor-project-dock.js', 'project-dock', () => {
-                loadClassic('/editor-project-dock-ux.js', 'project-dock-ux', () => {
-                  loadClassic('/editor-workspace-ui.js', 'workspace-ui', () => {
-                    loadClassic('/editor-project-library.js', 'project-library', () => {
-                      // Install the final JOIN implementation before actions/menu markup.
-                      // This avoids the legacy two-table generator being captured during startup.
-                      loadClassic('/editor-join-style.js', 'join-style', () => {
-                        loadClassic('/editor-actions.js', 'actions', () => {
-                          loadClassic('/editor-sample-actions.js', 'sample-actions', () => {
-                            loadClassic('/editor-join-actions.js', 'join-actions', () => {
-                              loadClassic('/editor-relation-routing-ux.js', 'relation-routing-ux', () => {
-                                loadClassic('/editor-relation-identity.js', 'relation-identity', () => {
-                                  loadClassic('/editor-relation-router-v2.js', 'relation-router-v2', () => {
-                                    loadClassic('/editor-relation-router-strategies.js', 'relation-router-strategies', () => {
-                                      loadClassic('/editor-relation-port-selector.js', 'relation-port-selector', () => {
-                                        loadClassic('/editor-relation-fanout.js', 'relation-fanout', () => {
-                                          loadClassic('/editor-relation-router-modes.js', 'relation-router-modes', () => {
-                                            loadClassic('/editor-table-visibility.js', 'table-visibility', () => {
-                                              loadClassic('/editor-view-projection.js', 'view-projection', () => {
-                                                loadClassic('/editor-project-diagnostics.js', 'project-diagnostics', () => {
-                                                  loadClassic('/editor-desktop-shell.js', 'desktop-shell', () => {
-                                                    loadClassic('/editor-relation-router-menu.js', 'relation-router-menu', () => {
-                                                      loadClassic('/editor-welcome.js', 'welcome', () => {
-                                                        loadClassic('/editor-responsive-ux.js', 'responsive-ux', () => {
-                                                          loadClassic('/editor-mybatis.js', 'mybatis', () => {
-                                                            loadClassic('/editor-ai-context.js', 'ai-context')
+                loadClassic('/editor-project-dock.js', 'project-dock', () => {
+                  loadClassic('/editor-project-dock-ux.js', 'project-dock-ux', () => {
+                    loadClassic('/editor-workspace-ui.js', 'workspace-ui', () => {
+                      loadClassic('/editor-project-library.js', 'project-library', () => {
+                        // Install the final JOIN implementation before actions/menu markup.
+                        // This avoids the legacy two-table generator being captured during startup.
+                        loadClassic('/editor-join-style.js', 'join-style', () => {
+                          loadClassic('/editor-actions.js', 'actions', () => {
+                            loadClassic('/editor-folder-project-actions.js', 'folder-project-actions', () => {
+                              loadClassic('/editor-sample-actions.js', 'sample-actions', () => {
+                                loadClassic('/editor-join-actions.js', 'join-actions', () => {
+                                  loadClassic('/editor-relation-routing-ux.js', 'relation-routing-ux', () => {
+                                    loadClassic('/editor-relation-identity.js', 'relation-identity', () => {
+                                      loadClassic('/editor-relation-router-v2.js', 'relation-router-v2', () => {
+                                        loadClassic('/editor-relation-router-strategies.js', 'relation-router-strategies', () => {
+                                          loadClassic('/editor-relation-port-selector.js', 'relation-port-selector', () => {
+                                            loadClassic('/editor-relation-fanout.js', 'relation-fanout', () => {
+                                              loadClassic('/editor-relation-router-modes.js', 'relation-router-modes', () => {
+                                                loadClassic('/editor-table-visibility.js', 'table-visibility', () => {
+                                                  loadClassic('/editor-view-projection.js', 'view-projection', () => {
+                                                    loadClassic('/editor-project-diagnostics.js', 'project-diagnostics', () => {
+                                                      loadClassic('/editor-desktop-shell.js', 'desktop-shell', () => {
+                                                        loadClassic('/editor-relation-router-menu.js', 'relation-router-menu', () => {
+                                                          loadClassic('/editor-welcome.js', 'welcome', () => {
+                                                            loadClassic('/editor-responsive-ux.js', 'responsive-ux', () => {
+                                                              loadClassic('/editor-mybatis.js', 'mybatis', () => {
+                                                                loadClassic('/editor-ai-context.js', 'ai-context')
+                                                              })
+                                                            })
                                                           })
                                                         })
                                                       })
@@ -97,7 +100,6 @@ function loadProjectLayer() {
                   })
                 })
               })
-            })
             })
           })
         })
