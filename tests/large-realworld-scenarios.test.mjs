@@ -141,7 +141,7 @@ for (const spec of [
   { name:'master-scale', total:687, placeholders:642, defined:45, relationCount:35, participants:20 },
   { name:'analysis-scale', total:692, placeholders:641, defined:51, relationCount:37, participants:24 }
 ]) {
-  test(`${spec.name} acceptance: Full Compact Hidden Relation Focus preserve source data`, () => {
+  test(`${spec.name} acceptance: Full Compact Smart Hidden Relation Focus preserve source data`, () => {
     const schema = makeScenario(spec)
     const sourceTables = schema.tables
     const { visibility } = loadVisibility(schema)
@@ -150,11 +150,17 @@ for (const spec of [
     assert.equal(schema.tables.length, spec.total)
     assert.equal(schema.relations.length, spec.relationCount)
     assert.equal(visibility.placeholderCount(), spec.placeholders)
+    assert.equal(projection.build(schema,'main').projectedTableCount, spec.defined)
+
+    visibility.setPlaceholderMode('full', { announce:false })
     assert.equal(projection.build(schema,'main').projectedTableCount, spec.total)
 
     visibility.setPlaceholderMode('compact', { announce:false })
     assert.equal(projection.build(schema,'main').projectedTableCount, spec.total)
     assert.equal(schema.tables, sourceTables)
+
+    visibility.setPlaceholderMode('smart', { announce:false })
+    assert.equal(projection.build(schema,'main').projectedTableCount, spec.defined)
 
     visibility.setPlaceholderMode('hidden', { announce:false })
     assert.equal(projection.build(schema,'main').projectedTableCount, spec.defined)

@@ -46,7 +46,8 @@ function loadProjectLayer() {
       loadClassic('/editor-sample-project-mode.js', 'sample-project-mode', () => {
         loadClassic('/editor-project.js', 'project', () => {
           loadClassic('/editor-workspace.js', 'workspace', () => {
-            loadClassic('/editor-import-layout-guard.js', 'import-layout-guard', () => {
+            loadClassic('/editor-folder-project.js', 'folder-project', () => {
+              loadClassic('/editor-import-layout-guard.js', 'import-layout-guard', () => {
               loadClassic('/editor-project-dock.js', 'project-dock', () => {
                 loadClassic('/editor-project-dock-ux.js', 'project-dock-ux', () => {
                   loadClassic('/editor-workspace-ui.js', 'workspace-ui', () => {
@@ -96,6 +97,7 @@ function loadProjectLayer() {
                   })
                 })
               })
+            })
             })
           })
         })

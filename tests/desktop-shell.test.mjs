@@ -96,7 +96,7 @@ test('desktop menu references registered actions and keeps dock navigation-only'
   const actionIds = new Set([
     ...actionSources.matchAll(/id\s*:\s*['`]([^'`]+)['`]/g)
   ].map(match => match[1]).filter(id => !id.includes('${')))
-  for (const mode of ['full','compact','hidden']) actionIds.add(`view.placeholders.${mode}`)
+  for (const mode of ['full','compact','smart','hidden']) actionIds.add(`view.placeholders.${mode}`)
   const menuIds = [...shell.matchAll(/'((?:file|edit|view|tools|help)\.[^']+)'/g)].map(match => match[1])
   const missing = [...new Set(menuIds)].filter(id => !actionIds.has(id))
   assert.deepEqual(missing, [])

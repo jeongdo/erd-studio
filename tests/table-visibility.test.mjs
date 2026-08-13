@@ -62,6 +62,16 @@ test('only inferred MyBatis empty nodes are placeholders', () => {
   assert.equal(E.TableVisibility.isPlaceholder(schema.tables[2]), false)
 })
 
+test('smart mode is the default and hides only unconnected placeholders', () => {
+  const { E, schema } = loadVisibility()
+  schema.tables.push({ id:'P2', name:'P2', desc:'MyBatis 참조 테이블 (P2)', columns:[] })
+  const before = schema.tables.map(table => table.id)
+
+  assert.equal(E.TableVisibility.placeholderMode(), 'smart')
+  assert.deepEqual(E.TableVisibility.visibleTables().map(table => table.id), ['P1','EMPTY_REAL','REAL'])
+  assert.deepEqual(schema.tables.map(table => table.id), before)
+})
+
 test('hidden mode keeps every project table while removing placeholders from projection', () => {
   const { E, schema } = loadVisibility({ mode:'full' })
   const before = schema.tables.map(t => t.id)
@@ -100,16 +110,19 @@ test('old show-placeholder preference migrates to hidden mode', () => {
   assert.equal(E.TableVisibility.showPlaceholders(), false)
 })
 
-test('Full Compact Hidden actions are mutually checked by mode', () => {
+test('Full Compact Smart Hidden actions are mutually checked by mode', () => {
   const { E, actions } = loadVisibility({ mode:'full' })
   const full = actions.get('view.placeholders.full')
   const compact = actions.get('view.placeholders.compact')
+  const smart = actions.get('view.placeholders.smart')
   const hidden = actions.get('view.placeholders.hidden')
-  assert.ok(full && compact && hidden)
+  assert.ok(full && compact && smart && hidden)
   assert.equal(full.checked(), true)
   compact.run()
   assert.equal(compact.checked(), true)
   assert.equal(full.checked(), false)
+  smart.run()
+  assert.equal(smart.checked(), true)
   hidden.run()
   assert.equal(hidden.checked(), true)
   assert.equal(E.TableVisibility.visibleTables().length, 2)
@@ -123,7 +136,7 @@ test('placeholder mode styles and menu are wired into the desktop shell', () => 
   const main = read('src/main.jsx')
   assert.match(main, /editor-table-visibility\.css/)
   const shell = read('editor-desktop-shell.js')
-  assert.match(shell, /view\.placeholders\.full','view\.placeholders\.compact','view\.placeholders\.hidden','view\.relationFocus/)
+  assert.match(shell, /view\.placeholders\.full','view\.placeholders\.compact','view\.placeholders\.smart','view\.placeholders\.hidden','view\.relationFocus/)
   const css = read('editor-table-visibility.css')
   assert.match(css, /erd-placeholder-compact/)
   assert.match(css, /width: 240px/)

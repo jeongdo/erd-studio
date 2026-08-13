@@ -10,12 +10,13 @@
     {
       id:'file', label:'파일', groups:[
         ['file.new','file.open','file.save'],
+        ['file.open.legacy','file.save.legacy'],
         ['file.samples','file.settings'],
         ['file.import.ddl','file.import.mybatis','file.import.json'],
         ['file.export.ddl.oracle','file.export.ddl.postgres','file.export.ddl.mysql'],
         ['file.export.json','file.export.png','file.export.svg'],
         ['file.export.spec.md','file.export.spec.csv','file.export.spec.xls']
-      ], groupLabels:['', '', '가져오기', 'DDL 내보내기', '파일 내보내기', '명세 내보내기']
+      ], groupLabels:['', '레거시 호환', '', '가져오기', 'DDL 내보내기', '파일 내보내기', '명세 내보내기']
     },
     {
       id:'edit', label:'편집', groups:[
@@ -29,7 +30,7 @@
       id:'view', label:'보기', groups:[
         ['view.inspector','view.fit'],
         ['view.layout.grid','view.layout.tree','view.layout.organic'],
-        ['view.minimap','view.legend','view.placeholders.full','view.placeholders.compact','view.placeholders.hidden','view.relationFocus'],
+        ['view.minimap','view.legend','view.placeholders.full','view.placeholders.compact','view.placeholders.smart','view.placeholders.hidden','view.relationFocus'],
         ['view.theme.cyber','view.theme.slate','view.theme.charcoal','view.theme.gold','view.theme.paper']
       ], groupLabels:['', '레이아웃', '표시', '테마']
     },

@@ -91,8 +91,10 @@
 
   [
     { id:'file.new', label:'새 프로젝트', icon:'fa-solid fa-file-circle-plus', shortcut:'Ctrl+N', run:()=>callGlobal('openNewProjectDialog') },
-    { id:'file.open', label:'프로젝트 열기…', icon:'fa-regular fa-folder-open', shortcut:'Ctrl+O', run:()=>P.Workspace?.openProjectFile?.() },
-    { id:'file.save', label:'프로젝트 파일 저장', icon:'fa-regular fa-floppy-disk', shortcut:'Ctrl+S', run:()=>P.exportFile?.() },
+    { id:'file.open', label:'프로젝트 폴더 열기…', icon:'fa-regular fa-folder-open', shortcut:'Ctrl+O', run:()=>E.FolderProject?.openFolder?.() || P.Workspace?.openProjectFile?.() },
+    { id:'file.save', label:'프로젝트 폴더 저장…', icon:'fa-regular fa-floppy-disk', shortcut:'Ctrl+S', run:()=>E.FolderProject?.saveFolder?.() || P.exportFile?.() },
+    { id:'file.open.legacy', label:'호환용 단일 JSON 열기…', icon:'fa-regular fa-file-code', run:()=>P.Workspace?.openProjectFile?.() },
+    { id:'file.save.legacy', label:'호환용 단일 JSON 내보내기', icon:'fa-solid fa-file-export', run:()=>P.exportFile?.() },
     { id:'file.samples', label:'샘플 / 성능 테스트…', icon:'fa-solid fa-flask', run:()=>callGlobal('openSamplesDialog') },
     { id:'file.settings', label:'프로젝트 설정…', icon:'fa-solid fa-gear', run:()=>P.editInfo?.() },
     { id:'file.import.ddl', label:'DDL Import…', icon:'fa-solid fa-file-code', run:()=>callGlobal('openDdlImportDialog') },

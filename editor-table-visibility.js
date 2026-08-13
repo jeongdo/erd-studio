@@ -10,12 +10,15 @@
   const PREF_MODE = 'erd_mybatis_placeholder_mode_v1';
   const LEGACY_PREF_SHOW = 'erd_show_mybatis_placeholders_v1';
   const PREF_RELATION_FOCUS = 'erd_relation_focus_v1';
-  const MODES = ['full', 'compact', 'hidden'];
+  const MODES = ['full', 'compact', 'smart', 'hidden'];
 
   function initialPlaceholderMode() {
     const saved = localStorage.getItem(PREF_MODE);
     if (MODES.includes(saved)) return saved;
-    return localStorage.getItem(LEGACY_PREF_SHOW) === '0' ? 'hidden' : 'full';
+    const legacy = localStorage.getItem(LEGACY_PREF_SHOW);
+    if (legacy === '0') return 'hidden';
+    if (legacy === '1') return 'full';
+    return 'smart';
   }
 
   let placeholderMode = initialPlaceholderMode();
@@ -40,13 +43,14 @@
   function isVisible(table, view = E.currentSchema?.(), relationIds = null) {
     if (!table) return false;
     if (placeholderMode === 'hidden' && isPlaceholder(table)) return false;
-    const focusedIds = relationIds || (relationFocus ? relationTableIds(view) : null);
-    if (focusedIds && !focusedIds.has(tableId(table))) return false;
+    const connectedIds = relationIds || ((relationFocus || placeholderMode === 'smart') ? relationTableIds(view) : null);
+    if (placeholderMode === 'smart' && isPlaceholder(table) && !connectedIds?.has(tableId(table))) return false;
+    if (relationFocus && connectedIds && !connectedIds.has(tableId(table))) return false;
     return true;
   }
 
   function visibleTables(view = E.currentSchema?.()) {
-    const relationIds = relationFocus ? relationTableIds(view) : null;
+    const relationIds = (relationFocus || placeholderMode === 'smart') ? relationTableIds(view) : null;
     return (view?.tables || []).filter(table => isVisible(table, view, relationIds));
   }
 
@@ -56,7 +60,7 @@
 
   function applyCardMode(card, table, view, relationIds) {
     const placeholder = isPlaceholder(table);
-    const compact = placeholder && placeholderMode === 'compact';
+    const compact = placeholder && (placeholderMode === 'compact' || placeholderMode === 'smart');
     card.dataset.erdPlaceholder = placeholder ? '1' : '0';
     card.classList.toggle('erd-placeholder-compact', compact);
     card.hidden = !isVisible(table, view, relationIds);
@@ -65,7 +69,7 @@
   }
 
   function setCardVisibility(view) {
-    const relationIds = relationFocus ? relationTableIds(view) : null;
+    const relationIds = (relationFocus || placeholderMode === 'smart') ? relationTableIds(view) : null;
     (view?.tables || []).forEach(table => {
       const card = document.getElementById(`card-${tableId(table)}`);
       if (card) applyCardMode(card, table, view, relationIds);
@@ -75,7 +79,7 @@
   function setRelationVisibility(view) {
     const relations = view?.relations || [];
     const byId = new Map((view?.tables || []).map(table => [tableId(table), table]));
-    const relationIds = relationFocus ? relationTableIds(view) : null;
+    const relationIds = (relationFocus || placeholderMode === 'smart') ? relationTableIds(view) : null;
     document.querySelectorAll('#connections-svg .connection-line').forEach(path => {
       const resolved = E.RelationIdentity?.resolveRelation?.(path, relations);
       const index = resolved?.index ?? Number(path.dataset.relationIndex);
@@ -90,7 +94,7 @@
 
   function setMinimapVisibility(view) {
     const byName = new Map((view?.tables || []).map(table => [table.name || tableId(table), table]));
-    const relationIds = relationFocus ? relationTableIds(view) : null;
+    const relationIds = (relationFocus || placeholderMode === 'smart') ? relationTableIds(view) : null;
     document.querySelectorAll('#editor-minimap .editor-minimap-table').forEach(marker => {
       const table = byName.get(marker.title);
       if (table) marker.hidden = !isVisible(table, view, relationIds);
@@ -129,7 +133,8 @@
     localStorage.setItem(PREF_MODE, placeholderMode);
     localStorage.setItem(LEGACY_PREF_SHOW, placeholderMode === 'hidden' ? '0' : '1');
 
-    const membershipChanged = (previous === 'hidden') !== (placeholderMode === 'hidden');
+    const membershipChanged = previous !== placeholderMode
+      && (previous === 'hidden' || placeholderMode === 'hidden' || previous === 'smart' || placeholderMode === 'smart');
     if (membershipChanged) refreshCanvas();
     else {
       apply();
@@ -141,7 +146,7 @@
     }));
 
     if (announce) {
-      const labels = { full:'Full', compact:'Compact', hidden:'Hidden' };
+      const labels = { full:'Full', compact:'Compact', smart:'Smart', hidden:'Hidden' };
       const count = placeholderCount();
       A.showToast?.(`MyBatis 빈 참조 테이블 ${count}개 · ${labels[placeholderMode]} 모드`);
     }
@@ -203,6 +208,7 @@
   [
     ['full', 'MyBatis 참조 테이블 · Full', 'fa-solid fa-table'],
     ['compact', 'MyBatis 참조 테이블 · Compact', 'fa-solid fa-compress'],
+    ['smart', 'MyBatis 참조 테이블 · Smart (연결된 항목만)', 'fa-solid fa-wand-magic-sparkles'],
     ['hidden', 'MyBatis 참조 테이블 · Hidden', 'fa-solid fa-eye-slash']
   ].forEach(([mode, label, icon]) => Actions.register({
     id:`view.placeholders.${mode}`,
