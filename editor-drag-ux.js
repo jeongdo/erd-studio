@@ -334,7 +334,6 @@
 
       if (!moved) return;
       suppressTableClickUntil = performance.now() + CLICK_SUPPRESS_MS;
-
       requestAnimationFrame(() => window.updateConnections?.());
     }
 
