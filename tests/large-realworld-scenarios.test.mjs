@@ -9,8 +9,8 @@ const here = path.dirname(fileURLToPath(import.meta.url))
 const root = path.resolve(here, '..')
 const read = name => fs.readFileSync(path.join(root, name), 'utf8')
 
-function makeScenario({ total, placeholders, relationCount, participants }) {
-  const defined = total - placeholders
+function makeScenario({ total, emptyTables, relationCount, participants }) {
+  const defined = total - emptyTables
   const tables = []
   for (let i = 0; i < defined; i += 1) {
     tables.push({
@@ -22,12 +22,12 @@ function makeScenario({ total, placeholders, relationCount, participants }) {
       columns:Array.from({ length:i % 11 === 0 ? 16 : 3 }, (_, c) => ({ name:c === 0 ? 'ID' : `C_${c}` }))
     })
   }
-  for (let i = 0; i < placeholders; i += 1) {
+  for (let i = 0; i < emptyTables; i += 1) {
     const index = defined + i
     tables.push({
-      id:`PH_${String(i).padStart(3,'0')}`,
-      name:`PH_${String(i).padStart(3,'0')}`,
-      desc:`MyBatis 참조 테이블 (PH_${i})`,
+      id:`EMPTY_${String(i).padStart(3,'0')}`,
+      name:`EMPTY_${String(i).padStart(3,'0')}`,
+      desc:'table without column metadata',
       x:50 + (index % 5) * 360,
       y:50 + Math.floor(index / 5) * 340,
       columns:[]
@@ -138,33 +138,31 @@ function loadRouter() {
 }
 
 for (const spec of [
-  { name:'master-scale', total:687, placeholders:642, defined:45, relationCount:35, participants:20 },
-  { name:'analysis-scale', total:692, placeholders:641, defined:51, relationCount:37, participants:24 }
+  { name:'master-scale', total:687, emptyTables:642, relationCount:35, participants:20 },
+  { name:'analysis-scale', total:692, emptyTables:641, relationCount:37, participants:24 }
 ]) {
-  test(`${spec.name} acceptance: Full Compact Hidden Relation Focus preserve source data`, () => {
+  test(`${spec.name} acceptance: Relation Focus preserves source data`, () => {
     const schema = makeScenario(spec)
     const sourceTables = schema.tables
+    const before = JSON.stringify(schema)
     const { visibility } = loadVisibility(schema)
     const projection = loadProjection(schema, visibility)
 
     assert.equal(schema.tables.length, spec.total)
     assert.equal(schema.relations.length, spec.relationCount)
-    assert.equal(visibility.placeholderCount(), spec.placeholders)
     assert.equal(projection.build(schema,'main').projectedTableCount, spec.total)
-
-    visibility.setPlaceholderMode('compact', { announce:false })
-    assert.equal(projection.build(schema,'main').projectedTableCount, spec.total)
-    assert.equal(schema.tables, sourceTables)
-
-    visibility.setPlaceholderMode('hidden', { announce:false })
-    assert.equal(projection.build(schema,'main').projectedTableCount, spec.defined)
-    assert.ok(spec.defined < 80, 'Hidden mode should bypass large-card virtualization for these real-world shapes')
 
     visibility.setRelationFocus(true, { announce:false })
     const focused = projection.build(schema,'main')
     assert.equal(focused.projectedTableCount, spec.participants)
     assert.equal(focused.projectedRelationCount, spec.relationCount)
-    assert.equal(schema.tables.length, spec.total)
+    assert.equal(schema.tables, sourceTables)
+    assert.equal(JSON.stringify(schema), before)
+
+    visibility.setRelationFocus(false, { announce:false })
+    assert.equal(projection.build(schema,'main').projectedTableCount, spec.total)
+    assert.equal(schema.tables, sourceTables)
+    assert.equal(JSON.stringify(schema), before)
   })
 
   test(`${spec.name} acceptance: pathological imported layout repairs to zero card overlap`, () => {
@@ -181,7 +179,7 @@ for (const spec of [
 }
 
 test('large scenario parallel relations retain unique identity and balanced lanes', () => {
-  const schema = makeScenario({ total:687, placeholders:642, relationCount:35, participants:20 })
+  const schema = makeScenario({ total:687, emptyTables:642, relationCount:35, participants:20 })
   const identity = loadIdentity(schema.relations)
   const firstPair = schema.relations.slice(0,2)
   assert.notEqual(identity.relationKey(firstPair[0]), identity.relationKey(firstPair[1]))
