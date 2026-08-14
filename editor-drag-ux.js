@@ -14,12 +14,7 @@
     const startY = event.clientY;
     let moved = false;
 
-    window.isDraggingCard = true;
-    if (window.ERDEditor) window.ERDEditor.isDraggingCard = true;
-
     const trackMove = moveEvent => {
-      window.isDraggingCard = true;
-      if (window.ERDEditor) window.ERDEditor.isDraggingCard = true;
       if (moved) return;
       const dx = moveEvent.clientX - startX;
       const dy = moveEvent.clientY - startY;
@@ -29,16 +24,7 @@
     const finishDrag = () => {
       window.removeEventListener('mousemove', trackMove, true);
       window.removeEventListener('mouseup', finishDrag, true);
-      window.isDraggingCard = false;
-      if (window.ERDEditor) window.ERDEditor.isDraggingCard = false;
-      if (moved) {
-        suppressTableClickUntil = performance.now() + CLICK_SUPPRESS_MS;
-        if (typeof requestAnimationFrame === 'function') {
-          requestAnimationFrame(() => window.updateConnections?.());
-        } else {
-          window.updateConnections?.();
-        }
-      }
+      if (moved) suppressTableClickUntil = performance.now() + CLICK_SUPPRESS_MS;
     };
 
     window.addEventListener('mousemove', trackMove, true);

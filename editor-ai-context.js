@@ -23,26 +23,14 @@
     return out;
   }
 
-  function compactTable(table, mapper) {
-    const id = E.tableId(table);
-    const refs = mapper?.tableUsage?.[id] || [];
-    const byType = refs.reduce((acc, ref) => {
-      acc[ref.type] = (acc[ref.type] || 0) + 1;
-      return acc;
-    }, {});
+  function compactTable(table) {
     const out = {
       name: table.name,
       columns: (table.columns || []).map(cloneColumn)
     };
     if (table.desc) out.description = table.desc;
     if (table.inferred) out.inferred = true;
-    if (refs.length) {
-      out.mybatis = {
-        statements: refs.length,
-        operations: byType,
-        refs: refs.slice(0, 100).map(ref => ref.key)
-      };
-    }
+    if (table.source) out.source = table.source;
     return out;
   }
 
@@ -62,31 +50,6 @@
     return out;
   }
 
-  function mapperIndex(schemaKey) {
-    return P.state.sources?.mybatisIndexes?.[schemaKey]
-      || (P.state.sources?.mybatis?.schemaKey === schemaKey ? P.state.sources.mybatis : null)
-      || null;
-  }
-
-  function filterStatements(mapper, tableIds, includePreview) {
-    if (!mapper?.statements?.length) return [];
-    const ids = new Set(tableIds);
-    return mapper.statements
-      .filter(stmt => (stmt.tables || []).some(table => ids.has(table)))
-      .map(stmt => {
-        const out = {
-          key: stmt.key,
-          type: stmt.type,
-          file: stmt.file,
-          domain: stmt.domain,
-          tables: stmt.tables || []
-        };
-        if (stmt.joins?.length) out.joins = stmt.joins;
-        if (includePreview && stmt.preview) out.preview = stmt.preview;
-        return out;
-      });
-  }
-
   function externalRelations(view, ids) {
     const set = new Set(ids);
     return (view.relations || [])
@@ -101,7 +64,6 @@
     const tables = (view.tables || []).filter(table => !requested || requested.has(E.tableId(table)));
     const ids = tables.map(E.tableId);
     const idSet = new Set(ids);
-    const mapper = mapperIndex(schemaKey);
     const relations = (view.relations || [])
       .filter(rel => idSet.has(rel.from) && idSet.has(rel.to))
       .map(compactRelation);
@@ -119,7 +81,7 @@
         tables: tables.length,
         relations: relations.length
       },
-      tables: tables.map(table => compactTable(table, mapper)),
+      tables: tables.map(compactTable),
       relations,
       subjectAreas: areas
     };
@@ -127,23 +89,13 @@
       const external = externalRelations(view, ids);
       if (external.length) result.externalRelations = external;
     }
-    const statements = filterStatements(mapper, ids, !!options.includeSqlPreview);
-    if (statements.length) {
-      result.mybatis = {
-        importedAt: mapper.importedAt,
-        files: mapper.files?.length || 0,
-        statements
-      };
-      result.counts.mapperStatements = statements.length;
-    }
     return result;
   }
 
   function buildScopeContext() {
     const area = P.activeArea(currentView);
     const scope = buildSchemaContext(currentView, {
-      tableIds: area?.tableIds || null,
-      includeSqlPreview: true
+      tableIds: area?.tableIds || null
     });
     return {
       format: FORMAT,
@@ -165,7 +117,7 @@
 
   function buildProjectContext() {
     const schemas = Object.keys(schemaData).map(schemaKey =>
-      buildSchemaContext(schemaKey, { includeSqlPreview: false })
+      buildSchemaContext(schemaKey)
     );
     return {
       format: FORMAT,
@@ -180,8 +132,7 @@
       summary: {
         schemas: schemas.length,
         tables: schemas.reduce((sum, schema) => sum + schema.counts.tables, 0),
-        relations: schemas.reduce((sum, schema) => sum + schema.counts.relations, 0),
-        mapperStatements: schemas.reduce((sum, schema) => sum + (schema.counts.mapperStatements || 0), 0)
+        relations: schemas.reduce((sum, schema) => sum + schema.counts.relations, 0)
       },
       schemas
     };
@@ -214,7 +165,7 @@
       `Size: ${(raw.length / 1024).toFixed(1)} KB`,
       `Estimated tokens: ~${estimatedTokens.toLocaleString()}`,
       '',
-      '화면 좌표/색상/레이아웃 정보는 제외하고 스키마·관계·업무영역·MyBatis 사용처만 압축했습니다.'
+      '화면 좌표/색상/레이아웃 정보는 제외하고 스키마·관계·업무영역만 압축했습니다.'
     ].join('\n'));
   }
 

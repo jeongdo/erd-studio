@@ -81,12 +81,7 @@
     return (bundled.score||Infinity)<=(plain.score||Infinity)+220;
   }
 
-  function isDraggingActive() {
-    return Boolean(window.isDraggingCard || E?.isDraggingCard);
-  }
-
-  function refine(force = false){
-    if (!force && isDraggingActive()) return;
+  function refine(){
     const view=E.currentSchema?.(),relations=view?.relations||[],canvasLayer=document.getElementById('canvas-layer');
     if(!canvasLayer||!relations.length)return;
     const scale=R.readCanvasScale?.(canvasLayer)||1,entries=prepare(view,relations,canvasLayer,scale),lanes=F.assign(entries),routed=[];
@@ -112,7 +107,7 @@
   function openBenchmark(){const report=benchmark();if(!A?.ensureDialog)return report;const label={auto:'Auto Balanced',direct:'Direct Curve',corridor:'Orthogonal Corridor',astar:'A* Orthogonal'};const body=`<div class="manager-list">${['auto','direct','corridor','astar'].map(name=>{const row=report[name]||{};return`<div class="manager-row"><div><b>${label[name]}</b><small>${row.relations||0} relations · length ${row.length||0} · turns ${row.turns||0}</small></div><strong>hit ${row.obstacleHits||0} · cross ${row.crossings||0}</strong></div>`;}).join('')}</div><div class="empty-state">port 선택 후 hit/cross를 우선하고, 그 다음 길이와 꺾임 수를 비교합니다.</div>`;A.ensureDialog('relation-router-benchmark-dialog','관계선 라우터 비교',body,true).showModal();return report;}
 
   window.updateConnections=function(...args){const result=base.apply(this,args);refine();return result;};
-  E.RelationRouterModes={mode:()=>mode,setMode,refine,benchmark,clearHistory,portHistory,routeHistory,prepare,preferBundled,isDragging:isDraggingActive};
+  E.RelationRouterModes={mode:()=>mode,setMode,refine,benchmark,clearHistory,portHistory,routeHistory,prepare,preferBundled};
 
   if(Actions){[
     ['auto','view.router.auto','관계선 · Auto Balanced'],['direct','view.router.direct','관계선 · Direct Curve'],['corridor','view.router.corridor','관계선 · Orthogonal Corridor'],['astar','view.router.astar','관계선 · A* Orthogonal']
@@ -120,5 +115,5 @@
 
   document.addEventListener?.('erd:workspace-changed',clearHistory);
   document.addEventListener?.('erd:project-loaded',clearHistory);
-  if(typeof requestAnimationFrame==='function')requestAnimationFrame(()=>window.updateConnections?.());
+  requestAnimationFrame(()=>window.updateConnections?.());
 })();

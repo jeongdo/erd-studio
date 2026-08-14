@@ -19,10 +19,6 @@ function loadDiagnostics(schema, unresolved = [], projection = null) {
     tableId: table => table.id || table.name,
     columnArray: value => Array.isArray(value) ? value : [value],
     escapeHtml: value => String(value),
-    TableVisibility: {
-      isPlaceholder: table => (table.columns?.length || 0) === 0 && /^MyBatis 참조 테이블/.test(table.desc || ''),
-      placeholderMode: () => 'compact'
-    },
     ImportLayoutGuard: { physicalOverlapCount: () => 3 },
     ViewProjection: projection ? { build:() => projection } : undefined
   }
@@ -33,12 +29,12 @@ function loadDiagnostics(schema, unresolved = [], projection = null) {
   return { E, actions }
 }
 
-test('diagnostics separates placeholders, relation participants and parallel pairs', () => {
+test('diagnostics separates empty tables, relation participants and parallel pairs', () => {
   const schema = {
     tables:[
       { id:'A', columns:[{name:'ID'},{name:'ALT'}] },
       { id:'B', columns:[{name:'A_ID'},{name:'A_ALT'}] },
-      { id:'PH', desc:'MyBatis 참조 테이블 (PH)', columns:[] },
+      { id:'EMPTY', columns:[] },
       { id:'FREE', columns:[] }
     ],
     relations:[
@@ -49,8 +45,8 @@ test('diagnostics separates placeholders, relation participants and parallel pai
   const { E } = loadDiagnostics(schema, [{ reason:'missing table' }])
   const report = E.ProjectDiagnostics.analyze()
   assert.equal(report.totalTables, 4)
-  assert.equal(report.placeholderTables, 1)
-  assert.equal(report.definedTables, 3)
+  assert.equal(report.emptyTables, 2)
+  assert.equal(report.definedTables, 2)
   assert.equal(report.relationCount, 2)
   assert.equal(report.relationParticipantCount, 2)
   assert.equal(report.parallelRelationPairs, 1)
@@ -68,7 +64,6 @@ test('diagnostics reports active projection and direct renderer below threshold'
   }
   const { E } = loadDiagnostics(schema, [], { projectedTableCount:45, projectedRelationCount:0 })
   const report = E.ProjectDiagnostics.analyze()
-  assert.equal(report.placeholderMode, 'compact')
   assert.equal(report.projectedTables, 45)
   assert.equal(report.mountedCards, 45)
   assert.equal(report.rendererMode, 'Direct')

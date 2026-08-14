@@ -1,4 +1,4 @@
-/** ERD Studio portable project model: project metadata, schemas, subject areas and source indexes. */
+/** ERD Studio portable project model: project metadata, schemas, subject areas and import diagnostics. */
 (() => {
   'use strict';
   const E = window.ERDEditor;
@@ -16,6 +16,14 @@
     return Object.keys(schemaData || {});
   }
 
+  function normalizeSources(raw) {
+    const out = {};
+    if (Array.isArray(raw?.unresolvedRelations) && raw.unresolvedRelations.length) {
+      out.unresolvedRelations = clone(raw.unresolvedRelations);
+    }
+    return out;
+  }
+
   function defaultState() {
     const first = schemaKeys()[0] || '';
     return {
@@ -31,15 +39,7 @@
       },
       areas: [],
       activeAreaBySchema: first ? { [first]: null } : {},
-      sources: {
-        mybatis: {
-          importedAt: null,
-          files: [],
-          statements: [],
-          tableUsage: {}
-        },
-        mybatisIndexes: {}
-      }
+      sources: {}
     };
   }
 
@@ -69,12 +69,7 @@
       areas: Array.isArray(raw.areas) ? raw.areas.map(normalizeArea) : [],
       activeAreaBySchema: raw.activeAreaBySchema && typeof raw.activeAreaBySchema === 'object'
         ? { ...raw.activeAreaBySchema } : {},
-      sources: {
-        ...base.sources,
-        ...(raw.sources || {}),
-        mybatis: { ...base.sources.mybatis, ...(raw.sources?.mybatis || {}) },
-        mybatisIndexes: { ...(raw.sources?.mybatisIndexes || {}) }
-      }
+      sources: normalizeSources(raw.sources)
     };
   }
 
@@ -115,25 +110,18 @@
   function saveState() {
     sanitizeAreas();
     state.project.updatedAt = now();
+    state.sources = normalizeSources(state.sources);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch (err) {
       try {
         const light = clone(state);
-        light.sources.mybatis = {
-          importedAt: state.sources?.mybatis?.importedAt || null,
-          schemaKey: state.sources?.mybatis?.schemaKey || null,
-          files: [],
-          statements: [],
-          tableUsage: {},
-          localStorageOmitted: true
-        };
-        light.sources.mybatisIndexes = {};
+        light.sources = {};
         localStorage.setItem(STORAGE_KEY, JSON.stringify(light));
       } catch (fallbackErr) {
         console.warn('ERD project persistence failed:', fallbackErr);
       }
-      console.warn('Large source index kept in memory only:', err);
+      console.warn('Large project metadata kept in memory only:', err);
     }
   }
 
@@ -162,7 +150,15 @@
     if (!cleanName) throw new Error('Subject Area 이름이 필요합니다.');
     const live = liveTableIds(schemaKey);
     const ids = [...new Set(tableIds.map(String))].filter(id => live.has(id));
-    const area = normalizeArea({ id: uid('area'), name: cleanName, schemaKey, tableIds: ids, color, description, source });
+    const area = normalizeArea({
+      id: uid('area'),
+      name: cleanName,
+      schemaKey,
+      tableIds: ids,
+      color,
+      description,
+      source
+    });
     state.areas.push(area);
     saveState();
     document.dispatchEvent(new CustomEvent('erd:project-areas-changed', { detail: { areaId: area.id } }));
@@ -207,6 +203,7 @@
 
   function projectPayload() {
     sanitizeAreas();
+    state.sources = normalizeSources(state.sources);
     return {
       format: FORMAT,
       version: VERSION,
@@ -374,7 +371,10 @@
       if (editing && oldId && nextId && oldId !== nextId) {
         state.areas.filter(a => a.schemaKey === currentView).forEach(area => {
           area.tableIds = area.tableIds.map(id => {
-            if (id === oldId) { changed = true; return nextId; }
+            if (id === oldId) {
+              changed = true;
+              return nextId;
+            }
             return id;
           });
         });

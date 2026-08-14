@@ -44,8 +44,7 @@
     const tables = view?.tables || [];
     const relations = view?.relations || [];
     const byId = new Map(tables.map(table => [tableId(table), table]));
-    const isPlaceholder = E.TableVisibility?.isPlaceholder || (() => false);
-    const placeholders = tables.filter(isPlaceholder);
+    const emptyTables = tables.filter(table => (table.columns?.length || 0) === 0);
     const participants = new Set();
     const pairCounts = new Map();
     const missingTableRelations = [];
@@ -82,7 +81,6 @@
       projectedTableCount:tables.length,
       projectedRelationCount:relations.length
     };
-    const placeholderMode = E.TableVisibility?.placeholderMode?.() || (E.TableVisibility?.showPlaceholders?.() === false ? 'hidden' : 'full');
     const mountedCards = typeof document !== 'undefined'
       ? document.querySelectorAll?.('#cards-container .table-card')?.length || 0
       : projection.projectedTableCount;
@@ -92,8 +90,8 @@
 
     return {
       totalTables: tables.length,
-      placeholderTables: placeholders.length,
-      definedTables: tables.length - placeholders.length,
+      emptyTables: emptyTables.length,
+      definedTables: tables.length - emptyTables.length,
       relationCount: relations.length,
       relationParticipantCount: [...participants].filter(id => byId.has(id)).length,
       parallelRelationPairs: parallelPairs.length,
@@ -102,7 +100,6 @@
       missingTableRelations: missingTableRelations.length,
       missingColumnRelations: missingColumnRelations.length,
       unresolvedRelations,
-      placeholderMode,
       projectedTables: projection.projectedTableCount,
       projectedRelations: projection.projectedRelationCount,
       mountedCards,
@@ -121,11 +118,15 @@
   function openDiagnostics() {
     const report = analyze();
     const issueCount = report.missingTableRelations + report.missingColumnRelations + report.physicalOverlaps;
-    const routeModeLabel = report.routerMode === 'auto' ? 'Auto Balanced' : report.routerMode === 'astar' ? 'A* Orthogonal' : report.routerMode === 'corridor' ? 'Orthogonal Corridor' : report.routerMode === 'direct' ? 'Direct Curve' : report.routerMode;
+    const routeModeLabel = report.routerMode === 'auto' ? 'Auto Balanced'
+      : report.routerMode === 'astar' ? 'A* Orthogonal'
+        : report.routerMode === 'corridor' ? 'Orthogonal Corridor'
+          : report.routerMode === 'direct' ? 'Direct Curve'
+            : report.routerMode;
     const body = `
       <div class="manager-list">
         ${metric('전체 테이블', report.totalTables)}
-        ${metric('MyBatis 빈 참조 테이블', report.placeholderTables, `현재 ${report.placeholderMode} 모드`)}
+        ${metric('빈 테이블', report.emptyTables, '컬럼 정의가 없는 테이블')}
         ${metric('컬럼 정의 테이블', report.definedTables)}
         ${metric('Canvas Projection', `${report.projectedTables}/${report.totalTables}`, `${report.projectedRelations}/${report.relationCount} 관계`)}
         ${metric('현재 DOM 카드', report.mountedCards, report.rendererMode)}

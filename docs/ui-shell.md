@@ -8,12 +8,12 @@ ERD Studio의 UI는 데스크톱 개발 도구처럼 역할을 명확히 분리�
 ERD Studio | 파일 | 편집 | 보기 | 도구 | 도움말
 ```
 
-공통 기능은 반드시 메뉴에 먼저 등록한다.
+공통 기능은 메뉴에 먼저 등록한다.
 
-- 파일: 새 프로젝트, 열기, 저장, 샘플, 프로젝트 설정, Import
+- 파일: 새 프로젝트, 열기, 저장, 샘플, 프로젝트 설정, DDL/JSON Import, 내보내기
 - 편집: Undo/Redo, 테이블, 관계, 복제/삭제
-- 보기: Inspector, 화면 맞춤, 레이아웃, Minimap/Legend, Theme
-- 도구: JOIN/분석, Validation, MyBatis, AI Context, 버전, Benchmark
+- 보기: Inspector, 화면 맞춤, 레이아웃, Minimap/Legend, Relation Focus, Theme
+- 도구: JOIN/분석, Validation, AI Context, 버전, Benchmark
 - 도움말: 단축키, 제품 정보
 
 메뉴는 `editor-actions.js`의 Action Registry를 호출한다. 같은 기능을 여러 UI에서 별도 구현하지 않는다.
@@ -32,11 +32,9 @@ Quick Toolbar는 메뉴의 대체물이 아니다.
 - Inspector
 - 검색
 
-Theme dropdown과 거대한 개발도구 popover는 메뉴바로 통합한다.
+Theme dropdown과 큰 개발도구 popover는 메뉴바와 역할이 겹치지 않게 정리한다.
 
-## 3. 하단 Project Dock — 탐색 전용
-
-하단은 액션 툴바가 아니다.
+## 3. 하단 Project Dock — 탐색 중심
 
 ```text
 Project > Schema > Subject Area                         n tables  [⌃/⌄]
@@ -49,18 +47,17 @@ Project > Schema > Subject Area                         n tables  [⌃/⌄]
 - Subject Area 전환 / 관리
 - 현재 범위 테이블 수
 
-새 프로젝트, 파일 열기/저장, 프로젝트 설정, MyBatis Import, AI Context Export 같은 공통 액션은 하단에 두지 않는다.
+새 프로젝트, 파일 열기/저장, 프로젝트 설정, AI Context Export 같은 공통 액션은 하단 도크의 핵심 책임이 아니다.
 
-## 4. Welcome Hub — 프로젝트가 없을 때만
+## 4. Welcome Hub — 빈 작업공간에서만
 
 빈 작업공간으로 처음 실행했을 때 시작 화면을 표시한다.
 
 - 새 프로젝트
 - 프로젝트 파일 열기
 - DDL Import
-- MyBatis Import
-- Oracle HR / SCOTT Sample
-- Performance 300
+- JSON Restore
+- 내장 샘플 / Benchmark
 
 실제 테이블이 있는 프로젝트가 이미 열려 있으면 Welcome Hub를 띄우지 않는다.
 
@@ -70,12 +67,10 @@ Project > Schema > Subject Area                         n tables  [⌃/⌄]
 
 - Inspector: 선택 테이블 상세
 - Output: SQL / 코드 / 분석 결과
-- Context Menu: 선택 테이블에 대한 즉시 작업
+- Context Menu: 선택 테이블 즉시 작업
 - Relation UI: 관계 생성/편집
 
 ## 6. 새 기능 배치 원칙
-
-새 기능을 추가할 때 다음 순서로 판단한다.
 
 1. 모든 프로젝트에서 쓰는 공통 기능인가? → Menu Action
 2. 매우 자주 쓰는가? → Menu Action + Quick Toolbar
