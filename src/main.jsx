@@ -4,7 +4,6 @@ import projectManifest from '../projects/manifest.json'
 import './index.css'
 import '../editor-project.css'
 import '../editor-project-dock-ux.css'
-import '../editor-mybatis.css'
 import '../editor-join-style.css'
 import '../editor-relation-routing-ux.css'
 import '../editor-table-visibility.css'
@@ -71,9 +70,7 @@ function loadProjectLayer() {
                                                     loadClassic('/editor-relation-router-menu.js', 'relation-router-menu', () => {
                                                       loadClassic('/editor-welcome.js', 'welcome', () => {
                                                         loadClassic('/editor-responsive-ux.js', 'responsive-ux', () => {
-                                                          loadClassic('/editor-mybatis.js', 'mybatis', () => {
-                                                            loadClassic('/editor-ai-context.js', 'ai-context')
-                                                          })
+                                                          loadClassic('/editor-ai-context.js', 'ai-context')
                                                         })
                                                       })
                                                     })

@@ -11,7 +11,7 @@
       id:'file', label:'파일', groups:[
         ['file.new','file.open','file.save'],
         ['file.samples','file.settings'],
-        ['file.import.ddl','file.import.mybatis','file.import.json'],
+        ['file.import.ddl','file.import.json'],
         ['file.export.ddl.oracle','file.export.ddl.postgres','file.export.ddl.mysql'],
         ['file.export.json','file.export.png','file.export.svg'],
         ['file.export.spec.md','file.export.spec.csv','file.export.spec.xls']
@@ -39,12 +39,11 @@
         ['tools.impact','tools.lineage','tools.transactionScope'],
         ['tools.join','tools.joinPath','tools.dependency'],
         ['tools.validate','tools.nplus','tools.diagnostics'],
-        ['tools.mybatis.index','tools.mybatis.usage'],
         ['tools.ai.scope','tools.ai.project'],
         ['tools.version.save','tools.versions','tools.templates.add','tools.templates'],
         ['tools.performance'],
         ['tools.reset']
-      ], groupLabels:['코드 생성', '영향 분석', 'SQL / 관계', '검증', 'MyBatis', 'AI Context', '프로젝트 도구', 'Benchmark', 'Maintenance']
+      ], groupLabels:['코드 생성', '영향 분석', 'SQL / 관계', '검증', 'AI Context', '프로젝트 도구', 'Benchmark', 'Maintenance']
     },
     {
       id:'help', label:'도움말', groups:[['help.shortcuts','help.about']]

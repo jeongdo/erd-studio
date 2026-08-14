@@ -62,7 +62,7 @@
           <div>
             <span class="welcome-kicker">ERD STUDIO</span>
             <h1>프로젝트를 열어<br>구조부터 파악하세요.</h1>
-            <p>DDL · MyBatis · 수동 메타데이터를 하나의 프로젝트 작업공간으로 관리합니다.</p>
+            <p>DDL · 수동 메타데이터를 하나의 프로젝트 작업공간으로 관리합니다.</p>
           </div>
           <div class="welcome-current">
             <small>현재 로컬 작업공간</small>
@@ -80,7 +80,7 @@
           </div>
           <div class="welcome-import-actions">
             <button data-welcome-action="file.import.ddl"><i class="fa-solid fa-file-code"></i> DDL Import</button>
-            <button data-welcome-action="file.import.mybatis"><i class="fa-solid fa-code-branch"></i> MyBatis Import</button>
+            <button data-welcome-action="file.import.json"><i class="fa-solid fa-file-import"></i> JSON Restore</button>
           </div>
           <div class="welcome-section-head"><strong>샘플 / Benchmark</strong><span>실제 프로젝트와 분리</span></div>
           <div class="welcome-samples">${sampleCards()}</div>

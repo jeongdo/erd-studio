@@ -101,7 +101,7 @@ test('desktop menu references registered actions and keeps dock navigation-only'
   const missing = [...new Set(menuIds)].filter(id => !actionIds.has(id))
   assert.deepEqual(missing, [])
 
-  for (const selector of ['data-project-open','data-project-save','data-project-settings-explicit','data-mybatis-import','data-ai-context-export']) {
+  for (const selector of ['data-project-open','data-project-save','data-project-settings-explicit','data-ai-context-export']) {
     assert.match(shell, new RegExp(selector))
   }
 })
@@ -113,7 +113,7 @@ test('legacy tool capabilities remain reachable through canonical actions', () =
     'generateJoinForSelected','generateJoinPath','showDependencyOrder','detectNPlusOneRisk','validateSchema',
     'openDdlImportDialog','exportDdl','exportSchemaJson','importSchemaJson','openTemplateManager',
     'manualVersionSave','openVersionHistory','exportDiagram','exportSpecification','resetSavedSchema',
-    'openMyBatisImport','openMyBatisIndex','showMapperUsage','exportAiScopeContext','exportAiProjectContext'
+    'exportAiScopeContext','exportAiProjectContext'
   ]
   for (const name of globals) assert.equal(actions.includes(`callGlobal('${name}'`), true, name)
 })
@@ -124,7 +124,7 @@ test('welcome hub is limited to blank workspaces and exposes project entry paths
   assert.match(welcome, /file\.new/)
   assert.match(welcome, /file\.open/)
   assert.match(welcome, /file\.import\.ddl/)
-  assert.match(welcome, /file\.import\.mybatis/)
+  assert.match(welcome, /file\.import\.json/)
   assert.match(welcome, /ERDStudioSamples/)
   assert.match(welcome, /document\.readyState === 'complete'/)
 })
