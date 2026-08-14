@@ -10,7 +10,14 @@
   const HEADER_HEIGHT = 60;
   const COLUMN_HEIGHT = 34;
   const MIN_GAP = 60;
-  const MAX_LOCAL_ITERATIONS = 2;
+
+  // Large ERDs need bounded collision propagation:
+  // drag stays shallow/responsive, mouseup gets a deeper local settle pass.
+  const DRAG_PROPAGATION_DEPTH = 2;   // A -> B -> C -> D (3 hops)
+  const DRAG_MAX_MOVES = 32;
+  const SETTLE_PROPAGATION_DEPTH = 6;
+  const SETTLE_MAX_MOVES = 120;
+  const SETTLE_MAX_SEEDS = 48;
 
   const originalStartDrag = window.startDragCard;
   const originalSelectTable = window.selectTable;
@@ -134,8 +141,10 @@
     const toRect = toColElem.getBoundingClientRect();
     const fromCardRect = fromCard.getBoundingClientRect();
     const toCardRect = toCard.getBoundingClientRect();
-    const cardDx = (toCardRect.left + toCardRect.width / 2) - (fromCardRect.left + fromCardRect.width / 2);
-    const cardDy = (toCardRect.top + toCardRect.height / 2) - (fromCardRect.top + fromCardRect.height / 2);
+    const cardDx = (toCardRect.left + toCardRect.width / 2)
+      - (fromCardRect.left + fromCardRect.width / 2);
+    const cardDy = (toCardRect.top + toCardRect.height / 2)
+      - (fromCardRect.top + fromCardRect.height / 2);
     const offset = 8 / safeScale;
 
     let x1, y1, x2, y2, pathData, mx, my;
@@ -206,49 +215,78 @@
     relations.forEach(rel => updateRelationGeometry(rel, canvasRect, safeScale));
   }
 
-  function resolveLocalCollisions(dragged, index) {
+  function moveCardDom(table) {
+    const card = document.getElementById(`card-${idOf(table)}`);
+    if (!card) return;
+    card.style.left = `${table.x}px`;
+    card.style.top = `${table.y}px`;
+  }
+
+  function separate(source, other) {
+    if (!source || !other || source === other) return false;
+
+    const sourceWidth = CARD_WIDTH;
+    const sourceHeight = estimatedHeight(source);
+    const otherWidth = CARD_WIDTH;
+    const otherHeight = estimatedHeight(other);
+
+    const sourceCenterX = (Number(source.x) || 0) + sourceWidth / 2;
+    const sourceCenterY = (Number(source.y) || 0) + sourceHeight / 2;
+    const otherCenterX = (Number(other.x) || 0) + otherWidth / 2;
+    const otherCenterY = (Number(other.y) || 0) + otherHeight / 2;
+    const dx = otherCenterX - sourceCenterX;
+    const dy = otherCenterY - sourceCenterY;
+    const overlapX = (sourceWidth / 2 + otherWidth / 2 + MIN_GAP) - Math.abs(dx);
+    const overlapY = (sourceHeight / 2 + otherHeight / 2 + MIN_GAP) - Math.abs(dy);
+
+    if (overlapX <= 0 || overlapY <= 0) return false;
+
+    if (overlapX < overlapY) {
+      other.x = (Number(other.x) || 0) + (dx === 0 ? 1 : Math.sign(dx)) * overlapX;
+    } else {
+      other.y = (Number(other.y) || 0) + (dy === 0 ? 1 : Math.sign(dy)) * overlapY;
+    }
+    return true;
+  }
+
+  function resolveCollisionWave(seeds, index, options = {}) {
+    const maxDepth = Math.max(0, Number(options.maxDepth) || 0);
+    const maxMoves = Math.max(1, Number(options.maxMoves) || 1);
     const touched = new Set();
+    const queue = [];
+    const propagatedAtDepth = new Map();
 
-    for (let iteration = 0; iteration < MAX_LOCAL_ITERATIONS; iteration += 1) {
-      const dragWidth = CARD_WIDTH;
-      const dragHeight = estimatedHeight(dragged);
-      const dragCenterX = (Number(dragged.x) || 0) + dragWidth / 2;
-      const dragCenterY = (Number(dragged.y) || 0) + dragHeight / 2;
-      const nearby = index.query(tableRect(dragged, MIN_GAP));
-      let movedAny = false;
+    (seeds || []).forEach(table => {
+      if (!table) return;
+      queue.push({ table, depth: 0 });
+      propagatedAtDepth.set(idOf(table), 0);
+    });
 
-      nearby.forEach(other => {
-        if (!other || other === dragged) return;
+    let moveCount = 0;
 
-        const otherWidth = CARD_WIDTH;
-        const otherHeight = estimatedHeight(other);
-        const otherCenterX = (Number(other.x) || 0) + otherWidth / 2;
-        const otherCenterY = (Number(other.y) || 0) + otherHeight / 2;
-        const dx = otherCenterX - dragCenterX;
-        const dy = otherCenterY - dragCenterY;
-        const overlapX = (dragWidth / 2 + otherWidth / 2 + MIN_GAP) - Math.abs(dx);
-        const overlapY = (dragHeight / 2 + otherHeight / 2 + MIN_GAP) - Math.abs(dy);
+    while (queue.length && moveCount < maxMoves) {
+      const { table: source, depth } = queue.shift();
+      const nearby = index.query(tableRect(source, MIN_GAP));
 
-        if (overlapX <= 0 || overlapY <= 0) return;
-
-        if (overlapX < overlapY) {
-          other.x = (Number(other.x) || 0) + (dx === 0 ? 1 : Math.sign(dx)) * overlapX;
-        } else {
-          other.y = (Number(other.y) || 0) + (dy === 0 ? 1 : Math.sign(dy)) * overlapY;
-        }
+      for (const other of nearby) {
+        if (moveCount >= maxMoves) break;
+        if (!separate(source, other)) continue;
 
         index.update(other);
+        moveCardDom(other);
+
         const otherId = idOf(other);
         touched.add(otherId);
-        const otherCard = document.getElementById(`card-${otherId}`);
-        if (otherCard) {
-          otherCard.style.left = `${other.x}px`;
-          otherCard.style.top = `${other.y}px`;
-        }
-        movedAny = true;
-      });
+        moveCount += 1;
 
-      if (!movedAny) break;
+        if (depth >= maxDepth) continue;
+        const nextDepth = depth + 1;
+        const priorDepth = propagatedAtDepth.get(otherId);
+        if (priorDepth !== undefined && priorDepth <= nextDepth) continue;
+
+        propagatedAtDepth.set(otherId, nextDepth);
+        queue.push({ table: other, depth: nextDepth });
+      }
     }
 
     return touched;
@@ -290,6 +328,19 @@
     const dragOffY = (event.clientY - panY) / scale - (Number(dragged.y) || 0);
     const spatialIndex = createSpatialIndex(view.tables, tableId);
     const relationIndex = createRelationIndex(view.relations || []);
+    const touchedDuringDrag = new Set();
+    const touchedOrder = [];
+
+    function rememberTouched(tableIds) {
+      tableIds.forEach(id => {
+        if (id === tableId || touchedDuringDrag.has(id)) return;
+        touchedDuringDrag.add(id);
+        touchedOrder.push(id);
+        if (touchedOrder.length <= SETTLE_MAX_SEEDS) return;
+        const expired = touchedOrder.shift();
+        touchedDuringDrag.delete(expired);
+      });
+    }
 
     let latestMove = null;
     let moveFrame = 0;
@@ -306,11 +357,14 @@
       card.style.left = `${dragged.x}px`;
       card.style.top = `${dragged.y}px`;
 
-      const changedTableIds = resolveLocalCollisions(dragged, spatialIndex);
+      const changedTableIds = resolveCollisionWave([dragged], spatialIndex, {
+        maxDepth: DRAG_PROPAGATION_DEPTH,
+        maxMoves: DRAG_MAX_MOVES
+      });
+      rememberTouched(changedTableIds);
       changedTableIds.add(tableId);
 
-      // Keep only relations attached to moved tables live while dragging.
-      // The full relation set is still rebuilt once on mouseup.
+      // Only relations attached to moved tables stay live during the gesture.
       updateConnectedRelations(changedTableIds, relationIndex);
     }
 
@@ -334,6 +388,22 @@
 
       if (!moved) return;
       suppressTableClickUntil = performance.now() + CLICK_SUPPRESS_MS;
+
+      const settleSeeds = [dragged];
+      touchedDuringDrag.forEach(id => {
+        if (id === tableId) return;
+        const table = view.tables.find(item => idOf(item) === id);
+        if (table) settleSeeds.push(table);
+      });
+
+      // Deeper but still bounded local settle after mouseup. The dragged table
+      // remains the anchor because it is excluded from the spatial index.
+      resolveCollisionWave(settleSeeds, spatialIndex, {
+        maxDepth: SETTLE_PROPAGATION_DEPTH,
+        maxMoves: SETTLE_MAX_MOVES
+      });
+
+      // One full redraw after settle guarantees final line/badge consistency.
       requestAnimationFrame(() => window.updateConnections?.());
     }
 
