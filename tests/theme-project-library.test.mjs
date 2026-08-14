@@ -50,7 +50,7 @@ test('theme switching preserves desktop application state classes', () => {
 test('source project folder exposes Oracle default and Performance 300', () => {
   const manifest = json('projects/manifest.json')
   assert.equal(manifest.format, 'erd-studio-project-library')
-  assert.deepEqual(manifest.projects.map(project => project.id), ['oracle-default', 'performance-300'])
+  assert.deepEqual(manifest.projects.map(project => project.id), ['sei_fm_master', 'analysis_20260812', 'oracle-default', 'performance-300'])
 
   const oracle = json('projects/oracle-default.project.json')
   assert.equal(oracle.format, 'erd-studio-builtin-project')
