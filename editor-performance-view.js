@@ -94,7 +94,7 @@
       ultraView = buildPerformanceView({
         tableCount: 100000,
         colsPerRow: 316,
-        relationStride: 10,
+        relationStride: 1,
         key: '100000',
         tabName: '성능 100000',
         title: '초대규모 ERD 성능 확인 (100,000 Tables)',
