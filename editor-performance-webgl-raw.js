@@ -1,10 +1,14 @@
-/** Pure WebGL2 100k benchmark: no clustering, no viewport culling. */
+/** Pure WebGL2 100k benchmark: no clustering, no GPU viewport culling. */
 (() => {
   'use strict';
 
   const VIEW = 'performance_100000_raw';
   const SOURCE = 'performance_100000';
   const W = 360, HEADER = 52, ROW = 34, BOTTOM = 12;
+  const DETAIL_CELL = 840;
+  const NAME_DETAIL_SCALE = 0.16;
+  const HEADER_DETAIL_SCALE = 0.24;
+  const COLUMN_DETAIL_SCALE = 0.34;
   if (typeof schemaData === 'undefined' || !schemaData[SOURCE]) return;
 
   const source = schemaData[SOURCE];
@@ -37,6 +41,13 @@
   });
   workspace.appendChild(canvas);
 
+  const detailCanvas = document.createElement('canvas');
+  Object.assign(detailCanvas.style, {
+    position: 'absolute', inset: '0', width: '100%', height: '100%',
+    zIndex: '19', display: 'none', pointerEvents: 'none'
+  });
+  workspace.appendChild(detailCanvas);
+
   const hud = document.createElement('div');
   Object.assign(hud.style, {
     position: 'absolute', top: '12px', left: '12px', zIndex: '76', display: 'none',
@@ -49,11 +60,19 @@
   const gl = canvas.getContext('webgl2', {
     alpha: true, antialias: false, depth: false, stencil: false, preserveDrawingBuffer: false
   });
-  const available = !!gl;
+  const detailCtx = detailCanvas.getContext('2d');
+  const available = !!gl && !!detailCtx;
   let active = false, raf = 0, gpu = null, count = 0, bounds = null, pan = null;
-  let lastFrame = 0, fps = 0;
+  let lastFrame = 0, fps = 0, detailIndex = null, selected = null;
 
+  const idOf = t => t?.id || t?.name || '';
   const heightOf = t => HEADER + (t?.columns?.length || 0) * ROW + BOTTOM;
+  const rectOf = t => ({ left: t.x, top: t.y, right: t.x + W, bottom: t.y + heightOf(t) });
+  const intersects = (a, b) => a.right >= b.left && a.left <= b.right && a.bottom >= b.top && a.top <= b.bottom;
+
+  function css(name, fallback = '') {
+    return getComputedStyle(document.body).getPropertyValue(name).trim() || fallback;
+  }
 
   function rgb(value, fallback) {
     const raw = String(value || '').trim();
@@ -100,6 +119,31 @@
     };
   }
 
+  function detailCells(rect) {
+    const out = [];
+    for (let x = Math.floor(rect.left / DETAIL_CELL); x <= Math.floor(rect.right / DETAIL_CELL); x += 1) {
+      for (let y = Math.floor(rect.top / DETAIL_CELL); y <= Math.floor(rect.bottom / DETAIL_CELL); y += 1) out.push(`${x}:${y}`);
+    }
+    return out;
+  }
+
+  function buildDetailIndex(tables) {
+    const buckets = new Map();
+    tables.forEach(table => {
+      detailCells(rectOf(table)).forEach(key => {
+        if (!buckets.has(key)) buckets.set(key, []);
+        buckets.get(key).push(table);
+      });
+    });
+    return {
+      query(rect) {
+        const found = new Set();
+        detailCells(rect).forEach(key => (buckets.get(key) || []).forEach(table => found.add(table)));
+        return [...found];
+      }
+    };
+  }
+
   function upload() {
     initGpu();
     const tables = descriptor.tables;
@@ -112,12 +156,16 @@
     }
     gl.bindBuffer(gl.ARRAY_BUFFER, gpu.instances); gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
     count = tables.length; bounds = { left, top, right, bottom };
+    detailIndex = buildDetailIndex(tables);
   }
 
   function resize() {
     const r = workspace.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
     const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr));
     if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+    if (detailCanvas.width !== w || detailCanvas.height !== h) { detailCanvas.width = w; detailCanvas.height = h; }
+    canvas.dataset.dpr = dpr;
+    detailCanvas.dataset.dpr = dpr;
   }
 
   function fitScale() {
@@ -131,19 +179,103 @@
     panY = r.height / 2 - (bounds.top + bounds.bottom) / 2 * scale;
   }
 
+  function viewportWorld() {
+    const r = workspace.getBoundingClientRect();
+    const margin = 80 / Math.max(scale, .01);
+    return {
+      left: -panX / scale - margin,
+      top: -panY / scale - margin,
+      right: (r.width - panX) / scale + margin,
+      bottom: (r.height - panY) / scale + margin
+    };
+  }
+
+  function visibleDetailTables() {
+    if (!detailIndex || scale < NAME_DETAIL_SCALE) return [];
+    const viewport = viewportWorld();
+    return detailIndex.query(viewport).filter(table => intersects(rectOf(table), viewport));
+  }
+
+  function drawTableDetail(table) {
+    const x = table.x, y = table.y, h = heightOf(table);
+    const accent = css('--accent-blue', '#38bdf8');
+    const text = css('--text-main', '#e5e7eb');
+    const muted = css('--text-muted', '#94a3b8');
+    const panel = css('--panel-bg', '#0f172a');
+    const rose = css('--accent-rose', '#fb7185');
+
+    detailCtx.fillStyle = panel;
+    detailCtx.fillRect(x, y, W, HEADER);
+
+    if (selected === idOf(table)) {
+      detailCtx.strokeStyle = accent;
+      detailCtx.lineWidth = 3 / Math.max(scale, .1);
+      detailCtx.strokeRect(x, y, W, h);
+    }
+
+    detailCtx.textBaseline = 'middle';
+    detailCtx.fillStyle = accent;
+
+    if (scale < HEADER_DETAIL_SCALE) {
+      detailCtx.font = "700 22px 'Fira Code', monospace";
+      detailCtx.fillText(table.name, x + 14, y + HEADER / 2);
+      return;
+    }
+
+    detailCtx.font = "600 14px 'Fira Code', monospace";
+    detailCtx.fillText(table.name, x + 16, y + 18);
+    detailCtx.fillStyle = muted;
+    detailCtx.font = "500 10px 'Inter', sans-serif";
+    detailCtx.fillText(table.desc || '', x + 16, y + 38);
+
+    if (scale < COLUMN_DETAIL_SCALE) return;
+
+    table.columns.forEach((column, idx) => {
+      const cy = y + HEADER + idx * ROW + ROW / 2;
+      if (column.pk || column.fk) {
+        detailCtx.fillStyle = column.pk ? rose : accent;
+        detailCtx.font = "700 9px 'Fira Code', monospace";
+        detailCtx.fillText(column.pk ? 'PK' : 'FK', x + 18, cy);
+      }
+      detailCtx.fillStyle = text;
+      detailCtx.font = "500 12px 'Fira Code', monospace";
+      detailCtx.fillText(column.name, x + 52, cy);
+      detailCtx.fillStyle = muted;
+      detailCtx.font = "500 10px 'Fira Code', monospace";
+      const width = detailCtx.measureText(column.type).width;
+      detailCtx.fillText(column.type, x + W - 16 - width, cy);
+    });
+  }
+
+  function drawDetails() {
+    const r = workspace.getBoundingClientRect();
+    const dpr = Number(detailCanvas.dataset.dpr) || 1;
+    detailCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    detailCtx.clearRect(0, 0, r.width, r.height);
+    if (scale < NAME_DETAIL_SCALE) return 0;
+
+    const tables = visibleDetailTables();
+    detailCtx.save();
+    detailCtx.translate(panX, panY);
+    detailCtx.scale(scale, scale);
+    tables.forEach(drawTableDetail);
+    detailCtx.restore();
+    return tables.length;
+  }
+
   function draw() {
     raf = 0; if (!active) return; resize();
     const r = workspace.getBoundingClientRect();
-    const css = name => getComputedStyle(document.body).getPropertyValue(name).trim();
     const fill = rgb(css('--card-bg'), [0.067,0.094,0.153]);
     const border = rgb(css('--accent-blue'), [0.22,0.74,0.97]);
     gl.viewport(0, 0, canvas.width, canvas.height); gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT);
     gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.useProgram(gpu.program); gl.bindVertexArray(gpu.vao);
     gl.uniform2f(gpu.viewport, r.width, r.height); gl.uniform2f(gpu.pan, panX, panY); gl.uniform1f(gpu.scale, scale);
     gl.uniform3fv(gpu.fill, fill); gl.uniform3fv(gpu.border, border); gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, count); gl.bindVertexArray(null);
+    const detailCount = drawDetails();
     if (zoomText) zoomText.innerText = `${Math.round(scale * 100)}%`;
     const now = performance.now(); if (lastFrame) { const f = 1000 / Math.max(1, now - lastFrame); fps = fps ? fps * .82 + f * .18 : f; } lastFrame = now;
-    hud.textContent = `WEBGL2 RAW · ${count} instances · no cluster · no culling · ${Math.min(99, Math.round(fps || 0))} fps`;
+    hud.textContent = `WEBGL2 RAW · ${count} instances · no cluster · GPU no culling · ${detailCount} visible details · ${Math.min(99, Math.round(fps || 0))} fps`;
   }
 
   function requestDraw() { if (active && !raf) raf = requestAnimationFrame(draw); }
@@ -154,21 +286,96 @@
     const wx = (x - panX) / old, wy = (y - panY) / old; scale = next; panX = x - wx * next; panY = y - wy * next; requestDraw(); return true;
   }
 
+  function world(clientX, clientY) {
+    const r = workspace.getBoundingClientRect();
+    return { x: (clientX - r.left - panX) / scale, y: (clientY - r.top - panY) / scale };
+  }
+
+  function hitTable(x, y) {
+    if (!detailIndex || scale < NAME_DETAIL_SCALE) return null;
+    const candidates = detailIndex.query({ left: x, top: y, right: x, bottom: y });
+    for (let i = candidates.length - 1; i >= 0; i -= 1) {
+      const table = candidates[i], rect = rectOf(table);
+      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) return table;
+    }
+    return null;
+  }
+
+  function inspect(table) {
+    const inspector = document.getElementById('inspector');
+    selected = idOf(table);
+    selectedTableId = selected;
+    document.getElementById('drawer-table-name').innerText = table.name;
+    document.getElementById('drawer-table-desc').innerText = table.desc || '';
+
+    const maxName = Math.max(...table.columns.map(column => column.name.length), 22);
+    let ddl = `CREATE TABLE ${table.name} (\n`;
+    table.columns.forEach((column, idx) => {
+      ddl += `    ${column.name.padEnd(maxName + 4)}${column.type}${column.pk ? ' PRIMARY KEY' : ''}${idx === table.columns.length - 1 ? '' : ','}\n`;
+    });
+    ddl += ');';
+    document.getElementById('ddl-text').innerText = ddl;
+
+    let mock = `INSERT INTO ${table.name} (\n`;
+    table.columns.forEach((column, idx) => {
+      mock += `    ${column.name}${idx === table.columns.length - 1 ? '' : ','}\n`;
+    });
+    mock += ') VALUES (\n';
+    table.columns.forEach((column, idx) => {
+      const value = column.type.includes('VARCHAR') ? "'STD_VALUE'" : column.type === 'DATE' ? 'SYSDATE' : '100';
+      mock += `    ${value}${idx === table.columns.length - 1 ? '' : ','}\n`;
+    });
+    mock += ');';
+    document.getElementById('mock-text').innerText = mock;
+    inspector?.classList.add('open');
+    requestDraw();
+  }
+
   function enter() {
     if (!available) return false;
-    currentView = VIEW; active = true; domLayer.style.display = 'none'; canvas.style.display = 'block'; hud.style.display = 'block';
+    currentView = VIEW; active = true; selected = null; domLayer.style.display = 'none';
+    canvas.style.display = 'block'; detailCanvas.style.display = 'block'; hud.style.display = 'block';
     upload(); center(); requestDraw(); return true;
   }
-  function leave() { active = false; canvas.style.display = 'none'; hud.style.display = 'none'; pan = null; }
+  function leave() {
+    active = false; canvas.style.display = 'none'; detailCanvas.style.display = 'none'; hud.style.display = 'none';
+    pan = null; selected = null;
+  }
 
-  canvas.addEventListener('mousedown', e => { if (!active || e.button !== 0) return; e.preventDefault(); canvas.style.cursor = 'grabbing'; pan = { x:e.clientX, y:e.clientY, panX, panY }; });
-  window.addEventListener('mousemove', e => { if (!active || !pan) return; panX = pan.panX + e.clientX - pan.x; panY = pan.panY + e.clientY - pan.y; requestDraw(); });
-  window.addEventListener('mouseup', () => { if (!active) return; pan = null; canvas.style.cursor = 'grab'; });
-  window.addEventListener('wheel', e => { if (!active || !workspace.contains(e.target)) return; e.preventDefault(); e.stopImmediatePropagation(); const r = workspace.getBoundingClientRect(); zoomAt(e.deltaY < 0 ? 1.12 : .88, e.clientX-r.left, e.clientY-r.top); }, { capture:true, passive:false });
+  canvas.addEventListener('mousedown', e => {
+    if (!active || e.button !== 0) return;
+    e.preventDefault(); canvas.style.cursor = 'grabbing';
+    pan = { x:e.clientX, y:e.clientY, panX, panY, moved:false };
+  });
+  window.addEventListener('mousemove', e => {
+    if (!active || !pan) return;
+    const dx = e.clientX - pan.x, dy = e.clientY - pan.y;
+    if (!pan.moved && Math.hypot(dx, dy) >= 5) pan.moved = true;
+    panX = pan.panX + dx; panY = pan.panY + dy; requestDraw();
+  });
+  window.addEventListener('mouseup', e => {
+    if (!active || !pan) return;
+    const finished = pan; pan = null; canvas.style.cursor = 'grab';
+    if (!finished.moved && scale >= NAME_DETAIL_SCALE) {
+      const point = world(e.clientX, e.clientY);
+      const table = hitTable(point.x, point.y);
+      if (table) inspect(table);
+    }
+  });
+  window.addEventListener('wheel', e => {
+    if (!active || !workspace.contains(e.target)) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    const r = workspace.getBoundingClientRect();
+    zoomAt(e.deltaY < 0 ? 1.12 : .88, e.clientX-r.left, e.clientY-r.top);
+  }, { capture:true, passive:false });
   window.addEventListener('resize', requestDraw);
 
   window.renderView = function(viewKey) {
-    if (available && viewKey === VIEW) { fallbackRenderView?.call(this, '__webgl_raw_off__'); window.ERDUltraWebGL?.leave?.(); return enter(); }
+    if (available && viewKey === VIEW) {
+      fallbackRenderView?.call(this, '__webgl_raw_off__');
+      window.ERDUltraWebGL?.leave?.();
+      return enter();
+    }
     leave(); return fallbackRenderView?.call(this, viewKey);
   };
   window.updateConnections = function(...args) { if (active) return requestDraw(); return fallbackUpdateConnections?.apply(this, args); };
@@ -177,8 +384,18 @@
 
   window.addEventListener('load', () => {
     const fallbackZoom = window.zoomCanvas, fallbackReset = window.resetZoom, fallbackApply = window.applyTransform;
-    window.zoomCanvas = function(factor, x, y) { if (!active) return fallbackZoom?.call(this, factor, x, y); const r = workspace.getBoundingClientRect(); return zoomAt(factor, Number.isFinite(x)?x:r.width/2, Number.isFinite(y)?y:r.height/2); };
-    window.resetZoom = function(...args) { if (!active) return fallbackReset?.apply(this, args); center(); requestDraw(); return true; };
-    window.applyTransform = function(...args) { if (active) return requestDraw(); return fallbackApply?.apply(this, args); };
+    window.zoomCanvas = function(factor, x, y) {
+      if (!active) return fallbackZoom?.call(this, factor, x, y);
+      const r = workspace.getBoundingClientRect();
+      return zoomAt(factor, Number.isFinite(x)?x:r.width/2, Number.isFinite(y)?y:r.height/2);
+    };
+    window.resetZoom = function(...args) {
+      if (!active) return fallbackReset?.apply(this, args);
+      center(); requestDraw(); return true;
+    };
+    window.applyTransform = function(...args) {
+      if (active) return requestDraw();
+      return fallbackApply?.apply(this, args);
+    };
   });
 })();
