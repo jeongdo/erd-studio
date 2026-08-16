@@ -4,6 +4,9 @@
 
   const VIEW = 'performance_lab_dom_1000';
   const W = 360, HEADER = 52, ROW = 34, BOTTOM = 12;
+  const GAP = 60, CELL = 520;
+  const DRAG_DEPTH = 2, DRAG_MOVES = 32;
+  const SETTLE_DEPTH = 6, SETTLE_MOVES = 120;
   const workspace = document.getElementById('workspace');
   const legacyLayer = document.getElementById('canvas-layer');
   const zoomText = document.getElementById('zoom-text');
@@ -55,17 +58,117 @@
   let cardById = new Map();
   let relationByTable = new Map();
   let pathByRelation = new Map();
+  let spatialIndex = null;
   let drag = null;
   let pan = null;
   let lastBuildMs = 0;
 
   const idOf = table => table?.id || table?.name || '';
   const heightOf = table => HEADER + (table?.columns?.length || 0) * ROW + BOTTOM;
+  const rectOf = (table, gap = 0) => ({
+    left: table.x - gap,
+    top: table.y - gap,
+    right: table.x + W + gap,
+    bottom: table.y + heightOf(table) + gap
+  });
   const view = () => schemaData?.[VIEW];
   const css = (name, fallback) => getComputedStyle(document.body).getPropertyValue(name).trim() || fallback;
 
   function relationKey(rel, index) {
     return `${index}:${rel.from}:${rel.to}`;
+  }
+
+  function cellKeys(rect) {
+    const keys = [];
+    for (let x = Math.floor(rect.left / CELL); x <= Math.floor(rect.right / CELL); x += 1) {
+      for (let y = Math.floor(rect.top / CELL); y <= Math.floor(rect.bottom / CELL); y += 1) {
+        keys.push(`${x}:${y}`);
+      }
+    }
+    return keys;
+  }
+
+  function makeSpatialIndex(tables) {
+    const buckets = new Map();
+    const memberships = new Map();
+
+    function insert(table) {
+      const keys = cellKeys(rectOf(table, GAP));
+      memberships.set(idOf(table), keys);
+      keys.forEach(key => {
+        if (!buckets.has(key)) buckets.set(key, new Set());
+        buckets.get(key).add(table);
+      });
+    }
+
+    function remove(table) {
+      (memberships.get(idOf(table)) || []).forEach(key => {
+        const bucket = buckets.get(key);
+        bucket?.delete(table);
+        if (bucket?.size === 0) buckets.delete(key);
+      });
+      memberships.delete(idOf(table));
+    }
+
+    tables.forEach(insert);
+    return {
+      update(table) {
+        remove(table);
+        insert(table);
+      },
+      query(rect) {
+        const found = new Set();
+        cellKeys(rect).forEach(key => buckets.get(key)?.forEach(table => found.add(table)));
+        return [...found];
+      }
+    };
+  }
+
+  function separate(source, other, anchorId) {
+    if (!other || source === other || idOf(other) === anchorId) return false;
+    const a = rectOf(source);
+    const b = rectOf(other);
+    const dx = (b.left + b.right - a.left - a.right) / 2;
+    const dy = (b.top + b.bottom - a.top - a.bottom) / 2;
+    const overlapX = W + GAP - Math.abs(dx);
+    const overlapY = (heightOf(source) + heightOf(other)) / 2 + GAP - Math.abs(dy);
+    if (overlapX <= 0 || overlapY <= 0) return false;
+
+    if (overlapX < overlapY) {
+      other.x += (dx === 0 ? 1 : Math.sign(dx)) * overlapX;
+    } else {
+      other.y += (dy === 0 ? 1 : Math.sign(dy)) * overlapY;
+    }
+    return true;
+  }
+
+  function collisionWave(seeds, maxDepth, maxMoves, anchorId) {
+    if (!spatialIndex) return new Set();
+    const queue = seeds.filter(Boolean).map(table => ({ table, depth: 0 }));
+    const seen = new Map(queue.map(item => [idOf(item.table), 0]));
+    const touched = new Set();
+    let moves = 0;
+
+    while (queue.length && moves < maxMoves) {
+      const { table: source, depth } = queue.shift();
+      for (const other of spatialIndex.query(rectOf(source, GAP))) {
+        if (moves >= maxMoves) break;
+        if (!separate(source, other, anchorId)) continue;
+
+        spatialIndex.update(other);
+        const otherId = idOf(other);
+        touched.add(otherId);
+        moves += 1;
+
+        if (depth >= maxDepth) continue;
+        const nextDepth = depth + 1;
+        const priorDepth = seen.get(otherId);
+        if (priorDepth !== undefined && priorDepth <= nextDepth) continue;
+        seen.set(otherId, nextDepth);
+        queue.push({ table: other, depth: nextDepth });
+      }
+    }
+    return touched;
   }
 
   function geometry(rel) {
@@ -100,6 +203,14 @@
     return { left, top, right, bottom };
   }
 
+  function syncSceneBounds() {
+    const data = view();
+    if (!data?.tables?.length) return;
+    bounds = computeBounds(data.tables);
+    svg.setAttribute('width', String(Math.max(1, bounds.right + 200)));
+    svg.setAttribute('height', String(Math.max(1, bounds.bottom + 200)));
+  }
+
   function build() {
     const data = view();
     if (!data) return;
@@ -111,6 +222,7 @@
     relationByTable = new Map();
     pathByRelation = new Map();
     cardById = new Map();
+    spatialIndex = makeSpatialIndex(data.tables);
     cards.innerHTML = '';
     svg.innerHTML = '';
     bounds = computeBounds(data.tables);
@@ -164,8 +276,7 @@
       });
     });
 
-    svg.setAttribute('width', String(Math.max(1, bounds.right + 200)));
-    svg.setAttribute('height', String(Math.max(1, bounds.bottom + 200)));
+    syncSceneBounds();
     signature = nextSignature;
     lastBuildMs = performance.now() - started;
     updateHud();
@@ -175,6 +286,22 @@
     (relationByTable.get(tableId) || []).forEach(key => {
       const entry = pathByRelation.get(key);
       if (entry) entry.path.setAttribute('d', geometry(entry.rel) || '');
+    });
+  }
+
+  function syncTable(table) {
+    const card = cardById.get(idOf(table));
+    if (card) {
+      card.style.left = `${table.x}px`;
+      card.style.top = `${table.y}px`;
+    }
+    updateConnected(idOf(table));
+  }
+
+  function syncTouched(ids) {
+    ids.forEach(id => {
+      const table = byId.get(id);
+      if (table) syncTable(table);
     });
   }
 
@@ -216,7 +343,7 @@
     if (!active) return;
     const data = view();
     const nodeCount = scene.querySelectorAll('*').length;
-    hud.textContent = `DOM/SVG · ${data.tables.length} tables · ${data.relations.length} paths · ${nodeCount} DOM nodes · build ${lastBuildMs.toFixed(1)} ms`;
+    hud.textContent = `DOM/SVG · ${data.tables.length} tables · ${data.relations.length} paths · ${nodeCount} DOM nodes · build ${lastBuildMs.toFixed(1)} ms · collision d${DRAG_DEPTH}/${DRAG_MOVES}`;
   }
 
   function enter() {
@@ -249,7 +376,13 @@
       const rect = workspace.getBoundingClientRect();
       const wx = (event.clientX - rect.left - panLocalX) / scaleLocal;
       const wy = (event.clientY - rect.top - panLocalY) / scaleLocal;
-      drag = { table, card, ox: wx - table.x, oy: wy - table.y };
+      drag = {
+        table,
+        id: idOf(table),
+        ox: wx - table.x,
+        oy: wy - table.y,
+        touched: new Set()
+      };
       root.style.cursor = 'grabbing';
     } else {
       pan = { x: event.clientX, y: event.clientY, px: panLocalX, py: panLocalY };
@@ -263,9 +396,13 @@
       const rect = workspace.getBoundingClientRect();
       drag.table.x = (event.clientX - rect.left - panLocalX) / scaleLocal - drag.ox;
       drag.table.y = (event.clientY - rect.top - panLocalY) / scaleLocal - drag.oy;
-      drag.card.style.left = `${drag.table.x}px`;
-      drag.card.style.top = `${drag.table.y}px`;
-      updateConnected(idOf(drag.table));
+      spatialIndex.update(drag.table);
+      syncTable(drag.table);
+
+      collisionWave([drag.table], DRAG_DEPTH, DRAG_MOVES, drag.id).forEach(id => {
+        drag.touched.add(id);
+      });
+      syncTouched(drag.touched);
       return;
     }
     if (pan) {
@@ -277,7 +414,18 @@
 
   window.addEventListener('mouseup', () => {
     if (!active) return;
-    drag = null;
+    if (drag) {
+      const finished = drag;
+      drag = null;
+      const seeds = [
+        finished.table,
+        ...[...finished.touched].slice(-48).map(id => byId.get(id)).filter(Boolean)
+      ];
+      const settled = collisionWave(seeds, SETTLE_DEPTH, SETTLE_MOVES, finished.id);
+      syncTable(finished.table);
+      syncTouched(new Set([...finished.touched, ...settled]));
+      syncSceneBounds();
+    }
     pan = null;
     root.style.cursor = 'grab';
   });

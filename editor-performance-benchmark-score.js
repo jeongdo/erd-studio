@@ -7,8 +7,8 @@
 
   const profiles = {
     performance_lab_dom_1000: {
-      name: 'DOM + SVG', difficulty: 2, failureRisk: 2, compactness: 9, readability: 9, performancePotential: 3,
-      note: '가장 이해하기 쉽지만 DOM/SVG 노드 수가 규모와 함께 증가'
+      name: 'DOM + SVG', difficulty: 4, failureRisk: 3, compactness: 7, readability: 8, performancePotential: 3,
+      note: '전파 충돌까지 맞추니 spatial index + DOM 좌표 + SVG 선 갱신 관리가 추가됨'
     },
     performance_lab_canvas_100000: {
       name: 'Canvas2D', difficulty: 4, failureRisk: 3, compactness: 8, readability: 8, performancePotential: 7,
