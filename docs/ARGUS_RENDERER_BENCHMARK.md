@@ -7,7 +7,17 @@ ERD Studio의 성능 탭은 외부 라이브러리를 고르는 용도가 아니
 | 탭 | 규모 | 상태 |
 | --- | ---: | --- |
 | 성능 100000 RAW | 100,000 | 기능형 WebGL2 + Canvas detail 기준점 |
-| LAB WebGL LOD 100K | 100,000 | semantic LOD/cluster 후보. 실제 테이블/관계선/drag/collision 포함 |
+| LAB WebGL CULL 100K | 100,000 | semantic LOD/cluster 없이 실제 테이블만 viewport culling하는 직접 비교군 |
+
+## 이번 비교 목적
+
+기존 LOD 후보에서 `fine / medium / coarse` cluster/tile 전환을 제거했다. 이제 두 후보 모두 실제 테이블 객체를 유지한다.
+
+- RAW: 실제 테이블 geometry를 기본 경로로 유지.
+- CULL: 실제 테이블만 유지하되 spatial index로 현재 viewport 주변만 WebGL instance/detail/relation 대상으로 선택.
+- 공통: 실제 테이블 표현, relation, pan/zoom, selection, drag, bounded collision.
+
+따라서 체감 차이가 나면 semantic tile 자체가 아니라 **viewport culling 경로와 RAW 경로의 차이**를 비교할 수 있다.
 
 ## 종료 / 탈락 기록
 
@@ -26,10 +36,10 @@ ERD Studio의 성능 탭은 외부 라이브러리를 고르는 용도가 아니
 - 실제 테이블 표현, relation, selection, drag/collision이 없는 상태라 제품 renderer 후보 비교에서는 제외.
 - LAB 탭과 전용 구현 파일은 제거.
 
-### 초기 LOD LAB 실패
-- 축약 구현에서 CSS 색상을 hex로만 파싱해 테마에 따라 잘못된 WebGL 색상이 전달될 수 있었다.
-- 테이블 상세/관계선/선택/drag/collision이 빠져 있어 후보 비교 조건도 불충분했다.
-- v0 semantic WebGL2 구조를 기준으로 다시 구현해 `#hex`와 `rgb()/rgba()` 색상 파싱, table/cluster LOD, relation, selection, drag, bounded collision을 복구했다.
+### LOD / Cluster 실험
+- semantic LOD 자체는 초대형 전체맵과 단계별 UX에 장점이 있다.
+- 이번 비교에서는 RAW와 렌더링 경로 차이를 더 정확히 보기 위해 cluster/tile 전환을 일시 제거했다.
+- 이전 LOD 구현은 Git history `9bd1d13`에서 복구 가능하다.
 
 ## 공통 Drag Collision 조건
 

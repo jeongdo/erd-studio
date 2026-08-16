@@ -1,6 +1,6 @@
 /**
  * ARGUS renderer benchmark descriptor.
- * Only active LAB candidate is the WebGL2 LOD renderer.
+ * Active LAB candidate: WebGL2 viewport culling without semantic LOD/tiles.
  */
 (() => {
   'use strict';
@@ -10,12 +10,12 @@
   if (!source) return;
 
   const descriptor = {
-    tabName: 'LAB WebGL LOD 100K',
-    icon: 'fa-solid fa-layer-group',
-    title: 'ARGUS Renderer Lab · WebGL2 LOD / Cluster (100,000 Tables)',
+    tabName: 'LAB WebGL CULL 100K',
+    icon: 'fa-solid fa-filter',
+    title: 'ARGUS Renderer Lab · WebGL2 Viewport Culling / No LOD (100,000 Tables)',
     performanceSample: true,
-    performanceKey: 'lab-webgl-lod-100000',
-    argusRenderer: 'webgl-lod'
+    performanceKey: 'lab-webgl-cull-100000',
+    argusRenderer: 'webgl-cull'
   };
 
   Object.defineProperties(descriptor, {

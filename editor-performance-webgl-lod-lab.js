@@ -1,18 +1,15 @@
 /**
- * ARGUS LOD candidate: WebGL2 geometry + semantic LOD + Canvas detail/interaction.
- * The previous compressed LAB version was only a geometry micro-benchmark.
+ * ARGUS WebGL culling candidate.
+ * Same 100K source and editor interactions as the prior LOD candidate,
+ * but semantic cluster/tile replacement is intentionally disabled so RAW
+ * and viewport-culling behavior can be compared directly.
  */
 (() => {
   'use strict';
 
   const VIEW = 'performance_lab_webgl_lod_100000';
   const W = 360, HEADER = 52, ROW = 34, BOTTOM = 12, GAP = 60, CELL = 840;
-  const TABLE_SCALE = 0.08, RELATION_SCALE = 0.10;
-  const LEVELS = [
-    { key: 'fine', cell: 1680, minScale: 0.03 },
-    { key: 'medium', cell: 6720, minScale: 0.012 },
-    { key: 'coarse', cell: 26880, minScale: 0 }
-  ];
+  const RELATION_SCALE = 0.10;
   const DRAG_DEPTH = 2, DRAG_MOVES = 32, SETTLE_DEPTH = 6, SETTLE_MOVES = 120;
 
   const workspace = document.getElementById('workspace');
@@ -27,7 +24,7 @@
   const previousLayout = window.applyLayout;
 
   const canvas = document.createElement('canvas');
-  canvas.id = 'argus-lod-webgl';
+  canvas.id = 'argus-cull-webgl';
   Object.assign(canvas.style, {
     position: 'absolute', inset: '0', width: '100%', height: '100%',
     zIndex: '22', display: 'none', pointerEvents: 'none'
@@ -35,7 +32,7 @@
   workspace.appendChild(canvas);
 
   const overlay = document.createElement('canvas');
-  overlay.id = 'argus-lod-overlay';
+  overlay.id = 'argus-cull-overlay';
   Object.assign(overlay.style, {
     position: 'absolute', inset: '0', width: '100%', height: '100%',
     zIndex: '23', display: 'none', cursor: 'grab'
@@ -59,15 +56,18 @@
   if (!available) return;
 
   let active = false, raf = 0, gpu = null, bounds = null, index = null;
-  let tables = [], byId = new Map(), relationByTable = new Map(), clusters = new Map();
-  let clustersDirty = true, selected = null, query = '', matchedIds = null;
-  let pan = null, drag = null, clusterClick = null, lastScene = null;
+  let tables = [], byId = new Map(), relationByTable = new Map();
+  let selected = null, query = '', matchedIds = null;
+  let pan = null, drag = null;
   let prep = 0, lastFrame = 0, fps = 0;
 
   const idOf = t => t?.id || t?.name || '';
   const heightOf = t => HEADER + (t?.columns?.length || 0) * ROW + BOTTOM;
   const rectOf = (t, gap = 0) => ({
-    left: t.x - gap, top: t.y - gap, right: t.x + W + gap, bottom: t.y + heightOf(t) + gap
+    left: t.x - gap,
+    top: t.y - gap,
+    right: t.x + W + gap,
+    bottom: t.y + heightOf(t) + gap
   });
   const intersects = (a, b) =>
     a.right >= b.left && a.left <= b.right && a.bottom >= b.top && a.top <= b.bottom;
@@ -184,13 +184,16 @@
   function cells(r) {
     const keys = [];
     for (let x = Math.floor(r.left / CELL); x <= Math.floor(r.right / CELL); x += 1) {
-      for (let y = Math.floor(r.top / CELL); y <= Math.floor(r.bottom / CELL); y += 1) keys.push(`${x}:${y}`);
+      for (let y = Math.floor(r.top / CELL); y <= Math.floor(r.bottom / CELL); y += 1) {
+        keys.push(`${x}:${y}`);
+      }
     }
     return keys;
   }
 
   function makeIndex(items) {
     const buckets = new Map(), membership = new Map();
+
     function insert(table) {
       const keys = cells(rectOf(table, GAP));
       membership.set(idOf(table), keys);
@@ -199,6 +202,7 @@
         buckets.get(key).add(table);
       });
     }
+
     function remove(table) {
       (membership.get(idOf(table)) || []).forEach(key => {
         const bucket = buckets.get(key);
@@ -207,9 +211,13 @@
       });
       membership.delete(idOf(table));
     }
+
     items.forEach(insert);
     return {
-      update(table) { remove(table); insert(table); },
+      update(table) {
+        remove(table);
+        insert(table);
+      },
       query(r) {
         const out = new Set();
         cells(r).forEach(key => buckets.get(key)?.forEach(t => out.add(t)));
@@ -222,32 +230,12 @@
     let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity;
     tables.forEach(t => {
       const r = rectOf(t);
-      left = Math.min(left, r.left); top = Math.min(top, r.top);
-      right = Math.max(right, r.right); bottom = Math.max(bottom, r.bottom);
+      left = Math.min(left, r.left);
+      top = Math.min(top, r.top);
+      right = Math.max(right, r.right);
+      bottom = Math.max(bottom, r.bottom);
     });
     bounds = { left, top, right, bottom };
-  }
-
-  function buildClusters(cellSize) {
-    const map = new Map();
-    tables.forEach(t => {
-      const r = rectOf(t);
-      const key = `${Math.floor((t.x + W/2) / cellSize)}:${Math.floor((t.y + heightOf(t)/2) / cellSize)}`;
-      let c = map.get(key);
-      if (!c) {
-        c = { key, count: 0, left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity };
-        map.set(key, c);
-      }
-      c.count += 1;
-      c.left = Math.min(c.left, r.left); c.top = Math.min(c.top, r.top);
-      c.right = Math.max(c.right, r.right); c.bottom = Math.max(c.bottom, r.bottom);
-    });
-    return [...map.values()];
-  }
-
-  function rebuildClusters() {
-    clusters = new Map(LEVELS.map(level => [level.key, buildClusters(level.cell)]));
-    clustersDirty = false;
   }
 
   function prepare() {
@@ -264,7 +252,6 @@
       });
     });
     computeBounds();
-    rebuildClusters();
     initGpu();
     prep = performance.now() - t0;
     center();
@@ -276,13 +263,16 @@
     const width = Math.max(1, Math.round(r.width * dpr));
     const height = Math.max(1, Math.round(r.height * dpr));
     if (canvas.width !== width || canvas.height !== height) {
-      canvas.width = width; canvas.height = height;
+      canvas.width = width;
+      canvas.height = height;
     }
     if (overlay.width !== width || overlay.height !== height) {
-      overlay.width = width; overlay.height = height;
+      overlay.width = width;
+      overlay.height = height;
     }
-    canvas.dataset.dpr = dpr; overlay.dataset.dpr = dpr;
-    return { r, dpr };
+    canvas.dataset.dpr = dpr;
+    overlay.dataset.dpr = dpr;
+    return { r };
   }
 
   function center() {
@@ -298,33 +288,27 @@
 
   function world(clientX, clientY) {
     const r = workspace.getBoundingClientRect();
-    return { x: (clientX - r.left - panX) / scale, y: (clientY - r.top - panY) / scale };
+    return {
+      x: (clientX - r.left - panX) / scale,
+      y: (clientY - r.top - panY) / scale
+    };
   }
 
   function viewportWorld() {
     const r = workspace.getBoundingClientRect();
     const margin = 180 / Math.max(scale, .0035);
     return {
-      left: -panX / scale - margin, top: -panY / scale - margin,
-      right: (r.width - panX) / scale + margin, bottom: (r.height - panY) / scale + margin
+      left: -panX / scale - margin,
+      top: -panY / scale - margin,
+      right: (r.width - panX) / scale + margin,
+      bottom: (r.height - panY) / scale + margin
     };
-  }
-
-  function chooseLevel() {
-    if (scale >= TABLE_SCALE) return null;
-    return LEVELS.find(level => scale >= level.minScale) || LEVELS[LEVELS.length - 1];
   }
 
   function scene() {
     const visible = viewportWorld();
-    const level = chooseLevel();
-    if (!level) {
-      const items = index.query(visible).filter(t => intersects(rectOf(t), visible));
-      return { type: 'tables', items, visible };
-    }
-    if (clustersDirty) rebuildClusters();
-    const items = (clusters.get(level.key) || []).filter(c => intersects(c, visible));
-    return { type: 'clusters', level, items, visible };
+    const items = index.query(visible).filter(t => intersects(rectOf(t), visible));
+    return { items, visible };
   }
 
   function instance(r, fill, border) {
@@ -333,14 +317,13 @@
 
   function drawGpu(instances) {
     const { r } = resize();
-    const flat = new Float32Array(instances.flat());
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.useProgram(gpu.program);
     gl.bindVertexArray(gpu.vao);
     gl.bindBuffer(gl.ARRAY_BUFFER, gpu.instances);
-    gl.bufferData(gl.ARRAY_BUFFER, flat, gl.DYNAMIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(instances.flat()), gl.DYNAMIC_DRAW);
     gl.uniform2f(gpu.viewport, r.width, r.height);
     gl.uniform2f(gpu.pan, panX, panY);
     gl.uniform1f(gpu.scale, scale);
@@ -414,7 +397,9 @@
 
   function relationCandidates(visibleTables) {
     const out = new Set();
-    visibleTables.forEach(t => (relationByTable.get(idOf(t)) || []).forEach(rel => out.add(rel)));
+    visibleTables.forEach(t => {
+      (relationByTable.get(idOf(t)) || []).forEach(rel => out.add(rel));
+    });
     return [...out];
   }
 
@@ -422,10 +407,13 @@
     const from = byId.get(rel.from), to = byId.get(rel.to);
     if (!from || !to) return false;
     const fh = heightOf(from), th = heightOf(to);
-    const fx = from.x + W/2, fy = from.y + fh/2, tx = to.x + W/2, ty = to.y + th/2;
+    const fx = from.x + W/2, fy = from.y + fh/2;
+    const tx = to.x + W/2, ty = to.y + th/2;
     if (!intersects({
-      left: Math.min(fx, tx)-80, top: Math.min(fy, ty)-80,
-      right: Math.max(fx, tx)+80, bottom: Math.max(fy, ty)+80
+      left: Math.min(fx, tx)-80,
+      top: Math.min(fy, ty)-80,
+      right: Math.max(fx, tx)+80,
+      bottom: Math.max(fy, ty)+80
     }, visible)) return false;
 
     const dx = tx-fx, dy = ty-fy;
@@ -435,30 +423,27 @@
       y1=dy>0 ? from.y+fh+8 : from.y-8;
       y2=dy>0 ? to.y-8 : to.y+th+8;
       const arm=Math.abs(y2-y1)*.5, mid=(x1+x2)/2;
-      c1x=mid; c2x=mid; c1y=y1+(dy>0?arm:-arm); c2y=y2+(dy>0?-arm:arm);
+      c1x=mid; c2x=mid;
+      c1y=y1+(dy>0?arm:-arm); c2y=y2+(dy>0?-arm:arm);
     } else {
       y1=columnY(from, rel.fromCol); y2=columnY(to, rel.toCol);
       x1=dx>0 ? from.x+W+8 : from.x-8;
       x2=dx>0 ? to.x-8 : to.x+W+8;
       const arm=Math.max(Math.abs(x2-x1)*.55,40), mid=(y1+y2)/2;
-      c1x=x1+(dx>0?arm:-arm); c2x=x2+(dx>0?-arm:arm); c1y=mid; c2y=mid;
+      c1x=x1+(dx>0?arm:-arm); c2x=x2+(dx>0?-arm:arm);
+      c1y=mid; c2y=mid;
     }
-    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.bezierCurveTo(c1x,c1y,c2x,c2y,x2,y2);
-    ctx.strokeStyle = c.line; ctx.globalAlpha=.7;
+    ctx.beginPath();
+    ctx.moveTo(x1,y1);
+    ctx.bezierCurveTo(c1x,c1y,c2x,c2y,x2,y2);
+    ctx.strokeStyle = c.line;
+    ctx.globalAlpha=.7;
     ctx.lineWidth=Math.max(1.2/scale,1.6);
     ctx.setLineDash(rel.identifying ? [] : [8/scale,5/scale]);
-    ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha=1;
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha=1;
     return true;
-  }
-
-  function drawCluster(c, level, colorSet) {
-    const widthPx=(c.right-c.left)*scale, heightPx=(c.bottom-c.top)*scale;
-    if (widthPx < 34 || heightPx < 24) return;
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillStyle=colorSet.text;
-    ctx.font=`700 ${Math.max(12/scale,18)}px 'Fira Code', monospace`;
-    ctx.fillText(String(c.count),(c.left+c.right)/2,(c.top+c.bottom)/2);
-    ctx.textAlign='start';
   }
 
   function draw() {
@@ -469,26 +454,16 @@
     let relationCount = 0;
 
     clearOverlay();
-    if (s.type === 'clusters') {
-      lastScene = s;
-      s.items.forEach(cluster => {
-        const fill = mix(c.card, c.panel, .25);
-        instances.push(instance(cluster, fill, c.accent));
-        drawCluster(cluster, s.level, c);
+    s.items.forEach(t => {
+      const fill = tableMatches(t) ? c.card : mix(c.card, c.panel, .78);
+      instances.push(instance(rectOf(t), fill, selected === idOf(t) ? c.accent : c.border));
+    });
+    if (scale >= RELATION_SCALE) {
+      relationCandidates(s.items).forEach(rel => {
+        if (drawRelation(rel, c, s.visible)) relationCount += 1;
       });
-    } else {
-      lastScene = s;
-      s.items.forEach(t => {
-        const fill = tableMatches(t) ? c.card : mix(c.card, c.panel, .78);
-        instances.push(instance(rectOf(t), fill, selected === idOf(t) ? c.accent : c.border));
-      });
-      if (scale >= RELATION_SCALE) {
-        relationCandidates(s.items).forEach(rel => {
-          if (drawRelation(rel, c, s.visible)) relationCount += 1;
-        });
-      }
-      s.items.forEach(t => drawTable(t, c));
     }
+    s.items.forEach(t => drawTable(t, c));
     ctx.restore();
     drawGpu(instances);
 
@@ -499,9 +474,9 @@
       fps = fps ? fps*.82 + currentFps*.18 : currentFps;
     }
     lastFrame = now;
-    hud.textContent = s.type === 'clusters'
-      ? `WEBGL2 LOD · ${s.level.key} · ${s.items.length} clusters · ${tables.length} tables · ${Math.min(999,Math.round(fps||0))} fps · prep ${prep.toFixed(1)} ms`
-      : `WEBGL2 LOD · ${s.items.length}/${tables.length} tables · ${relationCount}/${(current.relations||[]).length} lines · ${Math.min(999,Math.round(fps||0))} fps · prep ${prep.toFixed(1)} ms`;
+    hud.textContent = `WEBGL2 CULL · ${s.items.length}/${tables.length} tables · `
+      + `${relationCount}/${(current.relations||[]).length} lines · `
+      + `${Math.min(999,Math.round(fps||0))} fps · prep ${prep.toFixed(1)} ms`;
   }
 
   function requestDraw() {
@@ -517,15 +492,11 @@
     return null;
   }
 
-  function hitCluster(x, y) {
-    if (lastScene?.type !== 'clusters') return null;
-    return lastScene.items.find(c => x>=c.left && x<=c.right && y>=c.top && y<=c.bottom) || null;
-  }
-
   function separate(source, other, anchorId) {
     if (!other || source === other || idOf(other) === anchorId) return false;
     const a=rectOf(source), b=rectOf(other);
-    const dx=(b.left+b.right-a.left-a.right)/2, dy=(b.top+b.bottom-a.top-a.bottom)/2;
+    const dx=(b.left+b.right-a.left-a.right)/2;
+    const dy=(b.top+b.bottom-a.top-a.bottom)/2;
     const overlapX=W+GAP-Math.abs(dx);
     const overlapY=(heightOf(source)+heightOf(other))/2+GAP-Math.abs(dy);
     if (overlapX<=0 || overlapY<=0) return false;
@@ -544,20 +515,23 @@
       for(const other of index.query(rectOf(source,GAP))) {
         if(moves>=maxMoves) break;
         if(!separate(source,other,anchorId)) continue;
-        index.update(other); touched.add(idOf(other)); moves += 1;
+        index.update(other);
+        touched.add(idOf(other));
+        moves += 1;
         if(depth>=maxDepth) continue;
         const next=depth+1, prior=seen.get(idOf(other));
         if(prior!==undefined && prior<=next) continue;
-        seen.set(idOf(other),next); queue.push({t:other,depth:next});
+        seen.set(idOf(other),next);
+        queue.push({t:other,depth:next});
       }
     }
-    if(touched.size) clustersDirty=true;
     return touched;
   }
 
   function inspect(t) {
     const inspector=document.getElementById('inspector');
-    selected=idOf(t); selectedTableId=selected;
+    selected=idOf(t);
+    selectedTableId=selected;
     document.getElementById('drawer-table-name').innerText=t.name;
     document.getElementById('drawer-table-desc').innerText=t.desc||'';
     inspector?.classList.add('open');
@@ -569,20 +543,11 @@
     const old=Math.max(scale,.0001);
     const next=Math.max(.0035,Math.min(2.5,old*factor));
     const wx=(x-panX)/old, wy=(y-panY)/old;
-    scale=next; panX=x-wx*next; panY=y-wy*next;
-    requestDraw(); return true;
-  }
-
-  function focusCluster(cluster) {
-    const r=workspace.getBoundingClientRect();
-    const fit=Math.min(.12, Math.max(scale*2.4,
-      (r.width-140)/Math.max(1,cluster.right-cluster.left),
-      (r.height-140)/Math.max(1,cluster.bottom-cluster.top)
-    ));
-    scale=Math.max(.0035,Math.min(2.5,fit));
-    panX=r.width/2-(cluster.left+cluster.right)/2*scale;
-    panY=r.height/2-(cluster.top+cluster.bottom)/2*scale;
+    scale=next;
+    panX=x-wx*next;
+    panY=y-wy*next;
     requestDraw();
+    return true;
   }
 
   function handleSearch() {
@@ -592,11 +557,15 @@
     else {
       matchedIds=new Set();
       tables.forEach(t => {
-        if(t.name.toLowerCase().includes(query) || (t.desc||'').toLowerCase().includes(query)
-          || (t.columns||[]).some(c=>c.name.toLowerCase().includes(query))) matchedIds.add(idOf(t));
+        if(t.name.toLowerCase().includes(query)
+          || (t.desc||'').toLowerCase().includes(query)
+          || (t.columns||[]).some(c=>c.name.toLowerCase().includes(query))) {
+          matchedIds.add(idOf(t));
+        }
       });
     }
-    requestDraw(); return true;
+    requestDraw();
+    return true;
   }
 
   overlay.addEventListener('mousedown', e => {
@@ -604,14 +573,21 @@
     e.preventDefault();
     const p=world(e.clientX,e.clientY);
     overlay.style.cursor='grabbing';
-    if(chooseLevel()) {
-      clusterClick={cluster:hitCluster(p.x,p.y),x:e.clientX,y:e.clientY,moved:false};
-      pan={x:e.clientX,y:e.clientY,px:panX,py:panY};
-      return;
-    }
     const t=hitTable(p.x,p.y);
-    if(t) drag={t,id:idOf(t),x:e.clientX,y:e.clientY,ox:p.x-t.x,oy:p.y-t.y,moved:false,touched:new Set()};
-    else pan={x:e.clientX,y:e.clientY,px:panX,py:panY};
+    if(t) {
+      drag={
+        t,
+        id:idOf(t),
+        x:e.clientX,
+        y:e.clientY,
+        ox:p.x-t.x,
+        oy:p.y-t.y,
+        moved:false,
+        touched:new Set()
+      };
+    } else {
+      pan={x:e.clientX,y:e.clientY,px:panX,py:panY};
+    }
   });
 
   window.addEventListener('mousemove', e => {
@@ -620,15 +596,17 @@
       const dx=e.clientX-drag.x, dy=e.clientY-drag.y;
       if(!drag.moved && Math.hypot(dx,dy)>=5) drag.moved=true;
       const p=world(e.clientX,e.clientY);
-      drag.t.x=p.x-drag.ox; drag.t.y=p.y-drag.oy;
+      drag.t.x=p.x-drag.ox;
+      drag.t.y=p.y-drag.oy;
       index.update(drag.t);
       collisionWave([drag.t],DRAG_DEPTH,DRAG_MOVES,drag.id).forEach(id=>drag.touched.add(id));
-      clustersDirty=true; requestDraw(); return;
+      requestDraw();
+      return;
     }
     if(pan) {
-      const dx=e.clientX-pan.x, dy=e.clientY-pan.y;
-      if(clusterClick && Math.hypot(dx,dy)>=5) clusterClick.moved=true;
-      panX=pan.px+dx; panY=pan.py+dy; requestDraw();
+      panX=pan.px+e.clientX-pan.x;
+      panY=pan.py+e.clientY-pan.y;
+      requestDraw();
     }
   });
 
@@ -636,15 +614,19 @@
     if(!active) return;
     overlay.style.cursor='grab';
     if(drag) {
-      const done=drag; drag=null;
-      if(!done.moved) { inspect(done.t); return; }
-      const seeds=[done.t,...[...done.touched].slice(-48).map(id=>byId.get(id)).filter(Boolean)];
+      const done=drag;
+      drag=null;
+      if(!done.moved) {
+        inspect(done.t);
+        return;
+      }
+      const seeds=[
+        done.t,
+        ...[...done.touched].slice(-48).map(id=>byId.get(id)).filter(Boolean)
+      ];
       collisionWave(seeds,SETTLE_DEPTH,SETTLE_MOVES,done.id);
-      computeBounds(); clustersDirty=true; requestDraw(); return;
-    }
-    if(clusterClick) {
-      const click=clusterClick; clusterClick=null; pan=null;
-      if(!click.moved && click.cluster) focusCluster(click.cluster);
+      computeBounds();
+      requestDraw();
       return;
     }
     pan=null;
@@ -652,57 +634,90 @@
 
   window.addEventListener('wheel', e => {
     if(!active || !workspace.contains(e.target)) return;
-    e.preventDefault(); e.stopImmediatePropagation();
+    e.preventDefault();
+    e.stopImmediatePropagation();
     const r=workspace.getBoundingClientRect();
     zoomAt(e.deltaY<0?1.12:.88,e.clientX-r.left,e.clientY-r.top);
   }, {capture:true,passive:false});
   window.addEventListener('resize', requestDraw);
 
   function enter() {
-    previousRender?.call(window,'__argus_lod_off__');
-    currentView=VIEW; active=true; selected=null; selectedTableId=null;
-    legacy.style.display='none'; canvas.style.display='block'; overlay.style.display='block'; hud.style.display='block';
-    lastFrame=0; fps=0; query=(searchInput?.value||'').toLowerCase().trim();
-    prepare(); if(query) handleSearch(); requestDraw(); return true;
+    previousRender?.call(window,'__argus_cull_off__');
+    currentView=VIEW;
+    active=true;
+    selected=null;
+    selectedTableId=null;
+    legacy.style.display='none';
+    canvas.style.display='block';
+    overlay.style.display='block';
+    hud.style.display='block';
+    lastFrame=0;
+    fps=0;
+    query=(searchInput?.value||'').toLowerCase().trim();
+    prepare();
+    if(query) handleSearch();
+    requestDraw();
+    return true;
   }
+
   function leave() {
-    active=false; canvas.style.display='none'; overlay.style.display='none'; hud.style.display='none';
-    pan=null; drag=null; clusterClick=null; lastScene=null;
+    active=false;
+    canvas.style.display='none';
+    overlay.style.display='none';
+    hud.style.display='none';
+    pan=null;
+    drag=null;
   }
 
   window.renderView=function(key) {
     if(key===VIEW) return enter();
-    leave(); return previousRender?.call(this,key);
+    leave();
+    return previousRender?.call(this,key);
   };
+
   window.updateConnections=function(...args) {
     if(active) return requestDraw();
     return previousUpdate?.apply(this,args);
   };
+
   window.handleSearch=function(...args) {
     if(active) return handleSearch();
     return previousSearch?.apply(this,args);
   };
+
   window.applyLayout=function(type,...args) {
-    if(active) { center(); return true; }
+    if(active) {
+      center();
+      return true;
+    }
     return previousLayout?.call(this,type,...args);
   };
 
   window.addEventListener('load',()=>{
-    const fallbackZoom=window.zoomCanvas, fallbackReset=window.resetZoom, fallbackApply=window.applyTransform;
+    const fallbackZoom=window.zoomCanvas;
+    const fallbackReset=window.resetZoom;
+    const fallbackApply=window.applyTransform;
+
     window.zoomCanvas=function(f,x,y) {
       if(!active) return fallbackZoom?.call(this,f,x,y);
       const r=workspace.getBoundingClientRect();
       return zoomAt(f,Number.isFinite(x)?x:r.width/2,Number.isFinite(y)?y:r.height/2);
     };
+
     window.resetZoom=function(...args) {
       if(!active) return fallbackReset?.apply(this,args);
-      center(); return true;
+      center();
+      return true;
     };
+
     window.applyTransform=function(...args) {
-      if(active) { requestDraw(); return true; }
+      if(active) {
+        requestDraw();
+        return true;
+      }
       return fallbackApply?.apply(this,args);
     };
   });
 
-  window.ARGUSLodLab={available,isActive:()=>active,requestDraw,zoomAt,level:()=>chooseLevel()?.key||'tables'};
+  window.ARGUSCullLab={available,isActive:()=>active,requestDraw,zoomAt};
 })();

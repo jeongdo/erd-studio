@@ -11,9 +11,9 @@
       note: '현재 기능성 기준점. WebGL/Canvas/interaction 동기화 비용이 큼'
     },
     performance_lab_webgl_lod_100000: {
-      name: 'WebGL2 LOD / Cluster',
-      difficulty: 9, failureRisk: 7, compactness: 4, readability: 5, performancePotential: 10,
-      note: 'v0 semantic 구현을 기준으로 색상/테이블/관계선/drag/collision을 복구한 후보'
+      name: 'WebGL2 + Viewport Culling',
+      difficulty: 7, failureRisk: 5, compactness: 6, readability: 7, performancePotential: 9,
+      note: 'semantic tile/cluster를 제거하고 실제 테이블만 viewport culling해 RAW와 직접 비교'
     }
   };
 
