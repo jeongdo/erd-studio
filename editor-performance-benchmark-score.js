@@ -10,10 +10,6 @@
       name: 'DOM + SVG', difficulty: 4, failureRisk: 3, compactness: 7, readability: 8, performancePotential: 3,
       note: '전파 충돌까지 맞추니 spatial index + DOM 좌표 + SVG 선 갱신 관리가 추가됨'
     },
-    performance_lab_canvas_100000: {
-      name: 'Canvas2D', difficulty: 4, failureRisk: 3, compactness: 8, readability: 8, performancePotential: 7,
-      note: '단일 surface라 관리가 단순하지만 drawText/path 비용이 누적'
-    },
     performance_lab_webgl_geometry_100000: {
       name: 'Pure WebGL2 Geometry', difficulty: 6, failureRisk: 5, compactness: 7, readability: 6, performancePotential: 10,
       note: 'GPU 경로는 매우 단순하지만 buffer/shader/hit-test를 직접 관리'

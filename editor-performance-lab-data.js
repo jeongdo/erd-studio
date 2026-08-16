@@ -1,6 +1,6 @@
 /**
  * ARGUS renderer benchmark descriptors.
- * All 100k GPU/Canvas variants share the exact same table/relation objects so
+ * All 100k GPU variants share the exact same table/relation objects so
  * rendering strategy—not dataset shape—is the primary variable.
  */
 (() => {
@@ -27,14 +27,6 @@
     title: 'ARGUS Renderer Lab · DOM + SVG (1,000 Tables)',
     performanceKey: 'lab-dom-1000',
     argusRenderer: 'dom-svg'
-  });
-
-  schemaData.performance_lab_canvas_100000 = alias(source100k, {
-    tabName: 'LAB Canvas 100K',
-    icon: 'fa-solid fa-pen-ruler',
-    title: 'ARGUS Renderer Lab · Canvas2D (100,000 Tables)',
-    performanceKey: 'lab-canvas-100000',
-    argusRenderer: 'canvas'
   });
 
   schemaData.performance_lab_webgl_geometry_100000 = alias(source100k, {
