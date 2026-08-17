@@ -138,6 +138,8 @@
     const accent = css('--accent-blue', '#38bdf8');
 
     ctx.save();
+
+    // Card body and Oracle-style header.
     ctx.fillStyle = card;
     ctx.fillRect(x, y, W, height);
 
@@ -154,6 +156,7 @@
     ctx.lineTo(x + W, y + HEADER);
     ctx.stroke();
 
+    // Column row separators.
     if (scale >= .34) {
       ctx.globalAlpha = .55;
       ctx.lineWidth = .75 / Math.max(scale, .34);
@@ -167,6 +170,7 @@
       ctx.globalAlpha = 1;
     }
 
+    // TABLE badge.
     const badgeW = 46, badgeH = 20;
     const badgeX = x + W - 16 - badgeW;
     const badgeY = y + 16;
@@ -182,6 +186,7 @@
     originalFillText('TABLE', badgeX + badgeW / 2, badgeY + badgeH / 2 + .5);
     ctx.textAlign = 'start';
 
+    // Redraw selection because the regular CULL border is painted before the title.
     if (typeof selectedTableId !== 'undefined' && selectedTableId === (table.id || table.name)) {
       roundRect(ctx, x, y, W, height, 12);
       ctx.strokeStyle = accent;
