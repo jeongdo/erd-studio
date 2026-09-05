@@ -12,8 +12,5 @@ Chat 실행 환경 전용 규칙은 `ChatGPT.md`를 따른다.
 ## 4. Commit
 커밋 단위 및 메시지 형식은 `Commit.md`를 따른다.
 
-## 5. Phase
-Phase 단위 작업의 진행 및 기록 규칙은 `Phase.md`를 따른다.
-
-## 6. Communication
+## 5. Communication
 사용자와의 소통 및 작업 모드는 `Communication.md`를 따른다.
